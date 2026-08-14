@@ -1,0 +1,32 @@
+# ─────────────────────────────────────────────────────────────
+# Dev profile — activate with: SPRING_PROFILES_ACTIVE=dev
+# ─────────────────────────────────────────────────────────────
+spring:
+  jpa:
+    show-sql: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console   # http://localhost:8080/h2-console
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        options:
+          temperature: 0.3
+          num-predict: 150
+
+app:
+  cors:
+    allowed-origin: http://localhost:1313   # Hugo dev server (or 3000/5173 for Vite)
+  branding:
+    owner-name: ${OWNER_NAME:PandaC Dev}
+    chat-title: ${CHAT_TITLE:Chat (Dev)}
+    avatar-initial: ${CHAT_AVATAR_INITIAL:D}
+
+logging:
+  level:
+    in.pandac: DEBUG
+    org.apache.camel.component.telegram: DEBUG
+    org.apache.camel: INFO
+    org.springframework.ai: DEBUG

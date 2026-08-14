@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: pandac-chat-backend
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-9097}:8080"
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_ADMIN_CHAT_ID: ${TELEGRAM_ADMIN_CHAT_ID}
+      JWT_SECRET: ${JWT_SECRET}
+      H2_PASSWORD: ${H2_PASSWORD}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+      OLLAMA_TEMPERATURE: ${OLLAMA_TEMPERATURE:-0.3}
+      OLLAMA_MAX_TOKENS: ${OLLAMA_MAX_TOKENS:-150}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
+      CHAT_MODE: ${CHAT_MODE:-AI}
+      OWNER_NAME: ${OWNER_NAME:-PandaC}
+      CHAT_TITLE: ${CHAT_TITLE:-Chat with Me}
+      CHAT_AVATAR_INITIAL: ${CHAT_AVATAR_INITIAL:-P}
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-https://pandac.in}
+    volumes:
+      # Persist H2 database on host (survives container rebuilds)
+      - ./data:/app/data
+      # Optional: override personal-context without rebuilding the image
+      # - ./data/personal-context.txt:/app/data/personal-context.txt
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health 2>/dev/null | grep -q '\"status\":\"UP\"' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s

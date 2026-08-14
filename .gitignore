@@ -1,0 +1,14 @@
+# ── Backend ───────────────────────────────────────────────────
+backend/target/
+backend/.env
+backend/data/*.mv.db
+backend/data/*.trace.db
+
+# ── Widget ────────────────────────────────────────────────────
+widget/node_modules/
+
+# ── OS / IDE ──────────────────────────────────────────────────
+.DS_Store
+.idea/
+*.iml
+.vscode/

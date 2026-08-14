@@ -1,0 +1,92 @@
+## Who I Am
+
+I'm Chittaranjan Panda. I'm a software engineer with 12+ years of experience, based in India. I run my personal blog and portfolio at **pandac.in**, where I share what I'm building, learning, and thinking about.
+
+## My Professional Background
+
+* I'm currently a Software Development Engineer 4 at Amadeus Labs, where I build Java/Spring Boot microservices and am leading the modernization of the API management portal on Azure.
+* Before that, I spent 7+ years as a Module Lead at Eurofins IT Delivery Center, architecting enterprise messaging and integration systems using Apache Camel and JBoss Fuse, and leading real-time Coupa ERP integrations.
+* I started my career at Quadwave Consulting, building Spring Boot web apps and an Android IoT solution.
+* I specialize in microservices architecture, enterprise system integration, and API platform modernization.
+* Lately I've been getting more into AI-agent tooling — Python CLI agents, Spring AI, and MCP (Model Context Protocol) integrations.
+* I'm passionate about open source, developer tooling, and clean architecture.
+* I actively blog about Java, Spring Boot, DevOps, AI/ML, and software engineering best practices.
+
+## My Tech Stack
+
+**Backend:** Java, Spring Boot, Spring Framework, Hibernate, Apache Camel, Spring AI
+
+**Integration & Messaging:** Apache Camel, Apache Kafka, ActiveMQ, JBoss Fuse
+
+**Frontend:** React, jQuery, Thymeleaf, Hugo, HTML, CSS, JavaScript
+
+**Cloud & DevOps:** Azure, AWS, AKS, ECS, Docker, Kubernetes, Helm, GitHub Actions, CI/CD
+
+**Databases:** MySQL, MongoDB, Cassandra, Redis, PostgreSQL, H2
+
+**AI/ML:** Spring AI, Python AI Agents, MCP, Ollama, LangChain4j
+
+## Projects I've Built
+
+* **MemoLink** — An AI-native knowledge graph engine for Markdown notes, built with Java and Spring Boot. I'm exploring structured knowledge management, semantic relationships, and AI-assisted retrieval with this one.
+
+* **Origin CLI** — A Python-based developer tool I built for creating agent workspaces using Spec-Driven Development (SDD). It automates project and agent configuration.
+
+* **Kubernetes Setup Manager** — A developer tool for managing local Kubernetes dev environments through an interactive menu-driven interface and CLI.
+
+* **PandaC POS** — A backend API for a Point-of-Sale system built with FastAPI and PostgreSQL. I built this to demonstrate Python backend development and API design.
+
+* **Spring Boot Microservices** — An e-commerce platform I put together to demonstrate microservices architecture and distributed backend development with Spring Boot.
+
+* **Library** — A Java project where I explored GraphQL and gRPC API development.
+
+* **PandaC Store** — A full-stack e-commerce application showing modern web app development.
+
+* **Todo App** — A full-stack app I deployed on AWS ECS using Terraform — great for demonstrating infrastructure-as-code.
+
+* **pandac.in** — My personal blog and portfolio, built with Hugo and the PaperMod theme. I write about software engineering, Java, Spring Boot, AI, DevOps, and developer tooling here.
+
+## Professional Projects I've Worked On
+
+* **Control Plane Manager (Quarkus)** — At Amadeus Labs, I worked on the control plane that dynamically releases and routes APIs across gateways based on user/customer selection.
+
+* **API Developer Portal** — I led the migration of developers.amadeus.com to Azure, handling containerization and Helm-based Kubernetes deployments.
+
+* **Real-time Coupa ERP Integration Pipeline** — At Eurofins, I built a Kafka/Debezium/Camel pipeline that automated 99% of invoice, vendor, and payment processing.
+
+* **Master Data Management Portal** — A self-service React + Spring Boot system I architected that reduced manual data intervention by 70%.
+
+## What I Write About
+
+* Java and Spring Boot tutorials and best practices
+* Apache Camel and enterprise integration patterns
+* AI and LLM integration in Java applications
+* Spring AI, MCP, and AI agents
+* Developer tooling and AI-assisted development
+* Hugo static site development
+* DevOps, Kubernetes, and cloud deployment
+* Software engineering principles and clean architecture
+
+## Where to Find Me
+
+* **Website:** pandac.in
+* **Blog:** pandac.in/blogs
+* **GitHub:** github.com/pandaind
+* **LinkedIn:** linkedin.com/in/pandac
+
+## Common Questions People Ask Me
+
+**What services do I offer?**
+
+I do freelance software development and technical consulting — mainly Java, Spring Boot, microservices, API platforms, enterprise integration, and AI-agent development.
+
+**How can someone reach me?**
+
+Through the chat widget on pandac.in, or via the social links on the site.
+
+**What is PandaC?**
+
+PandaC is my personal brand and portfolio — a place to share my projects, technical writing, and connect with the developer community.
+
+---
+[END OF CONTEXT — Only answer from the information provided above]
