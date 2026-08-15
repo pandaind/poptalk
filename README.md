@@ -29,30 +29,7 @@ embed one `<script>` tag — and visitors can chat with your AI persona directly
 
 ## Architecture
 
-```
-┌──────────────────────────────────┐
-│  Blog / Static Site              │
-│  <script src="pandac-chat.min.js"│──── one-line embed
-│         data-api-url="...">      │
-└─────────────┬────────────────────┘
-              │  REST (HTTPS)
-              ▼
-┌──────────────────────────────────┐
-│  pandac-chat Backend             │
-│  Spring Boot + Apache Camel      │
-│                                  │
-│  ┌──────────┐  ┌──────────────┐  │
-│  │ JWT Auth │  │ Rate Limiter │  │
-│  └──────────┘  └──────────────┘  │
-│                                  │
-│  ┌───────────────────────────┐   │
-│  │ AI Mode  → Ollama         │   │
-│  │ Manual   → Telegram Bot   │   │
-│  └───────────────────────────┘   │
-│                                  │
-│  H2 file DB (sessions + history) │
-└──────────────────────────────────┘
-```
+![Architecture](archi.gif)
 
 ---
 
