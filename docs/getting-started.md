@@ -80,7 +80,7 @@ Add this snippet to your blog's HTML before `</body>`:
 
 ```html
 <script
-  src="https://cdn.jsdelivr.net/gh/pandaind/pandac-chat@main/widget/dist/pandac-chat.min.js"
+  src="https://cdn.jsdelivr.net/gh/pandaind/pandac-chat@master/widget/dist/pandac-chat.min.js"
   data-api-url="https://your-backend-domain.com"
   data-accent="#6C63FF"
   defer>
