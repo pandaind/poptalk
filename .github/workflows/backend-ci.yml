@@ -2,10 +2,10 @@ name: Backend CI
 
 on:
   push:
-    branches: [main]
+    branches: [master, main]
     paths: ['backend/**']
   pull_request:
-    branches: [main]
+    branches: [master, main]
     paths: ['backend/**']
 
 jobs:
@@ -29,7 +29,6 @@ jobs:
       - name: Build and test
         run: mvn -B clean verify
         env:
-          # Minimal stubs so context-loading beans don't fail in CI
           H2_PASSWORD: ci_test_password
           JWT_SECRET: ci_jwt_secret_that_is_at_least_64_chars_long_for_hs256_validation
           TELEGRAM_BOT_TOKEN: stub
