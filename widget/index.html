@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pandac-chat Widget — Dev Preview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      background: #0a0a0f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, sans-serif;
+      color: #f0f0f5;
+    }
+    .info {
+      text-align: center;
+      opacity: 0.4;
+      font-size: 14px;
+      line-height: 2;
+    }
+    .info strong { color: #6C63FF; opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="info">
+    <strong>pandac-chat</strong> widget dev preview<br/>
+    The chat button is in the <strong>bottom-right corner</strong> ↘<br/>
+    <small>Connects to: <span id="api-url">http://localhost:8080</span></small>
+  </div>
+
+  <!--
+    In dev mode the widget is loaded as a native ES module via Vite.
+    data-api-url points to your locally running backend.
+  -->
+  <script
+    type="module"
+    src="/src/pandac-chat.js"
+    data-api-url="http://localhost:8080"
+    data-accent="#6C63FF"
+  ></script>
+
+  <script>
+    // Show the configured API URL in the preview page
+    const s = document.querySelector('script[data-api-url]');
+    if (s) document.getElementById('api-url').textContent = s.dataset.apiUrl;
+  </script>
+</body>
+</html>

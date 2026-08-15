@@ -1,21 +1,34 @@
 import { defineConfig } from 'vite';
 
-export default defineConfig({
-  build: {
-    lib: {
-      entry: 'src/pandac-chat.js',
-      name: 'PandacChat',
-      fileName: () => 'pandac-chat.min.js',
-      formats: ['iife'],
-    },
-    outDir: 'dist',
-    cssCodeSplit: false,
-    rollupOptions: {
-      external: [],
-      output: {
-        inlineDynamicImports: true,
+export default defineConfig(({ command }) => {
+  // Dev mode: serve index.html normally (no library config needed)
+  if (command === 'serve') {
+    return {
+      server: {
+        port: 5173,
+        open: true,
       },
+    };
+  }
+
+  // Build mode: produce a single IIFE bundle
+  return {
+    build: {
+      lib: {
+        entry: 'src/pandac-chat.js',
+        name: 'PandacChat',
+        fileName: () => 'pandac-chat.min.js',
+        formats: ['iife'],
+      },
+      outDir: 'dist',
+      cssCodeSplit: false,
+      rollupOptions: {
+        external: [],
+        output: {
+          inlineDynamicImports: true,
+        },
+      },
+      minify: 'terser',
     },
-    minify: 'terser',
-  },
+  };
 });
