@@ -2,7 +2,7 @@
 
 # 💬 pandac-chat
 
-**An AI-powered personal chat widget — embed it on any blog in one line.**
+**An AI-powered personal chat widget — embed it on any website in one line.**
 
 [![Backend CI](https://github.com/pandaind/pandac-chat/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/pandaind/pandac-chat/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-6C63FF.svg)](LICENSE)
@@ -17,7 +17,7 @@
 
 ## What is this?
 
-`pandac-chat` is a self-hostable chat system where an AI model impersonates **you** on your blog.
+`pandac-chat` is a self-hostable chat system where an AI model impersonates **you** — on your blog, portfolio, docs site, product page, or anywhere you can drop a `<script>` tag.
 
 You write a `personal-context.txt` file describing yourself in first person, deploy the backend,
 embed one `<script>` tag — and visitors can chat with your AI persona directly on your site.
@@ -88,7 +88,7 @@ curl http://localhost:9097/api/config
 
 ### 4. Embed the widget
 
-Add this before `</body>` on your site:
+Add this before `</body>` on any site — blog, portfolio, docs, product page:
 
 ```html
 <script
