@@ -38,3 +38,4 @@ Run the JAR:
 java -jar target/pandac-chat-backend-1.0.0.jar
 ```
 *Ensure all environment variables from `.env.example` are set on the server.*
+
