@@ -20,9 +20,11 @@ public class JwtService {
     public JwtService(
             @Value("${app.jwt.secret}") String secret,
             @Value("${app.jwt.expiry-hours}") long expiryHours) {
-        // Fallback for missing secret during local dev to prevent startup crash
+        // Fail fast — never allow a known public secret to reach production
         if (secret == null || secret.isBlank() || secret.equals("${JWT_SECRET}")) {
-            secret = "ThisIsADefaultSecretForLocalDevOnlyChangeInProd123!";
+            throw new IllegalStateException(
+                "JWT_SECRET environment variable is not configured. " +
+                "Generate one with: openssl rand -hex 64");
         }
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expiryMillis = expiryHours * 3600 * 1000;

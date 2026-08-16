@@ -12,6 +12,7 @@ import in.pandac.chat.repository.ChatSessionRepository;
 import in.pandac.chat.service.AiChatService;
 import in.pandac.chat.service.ChatModeService;
 import in.pandac.chat.service.RateLimitService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.telegram.TelegramConstants;
@@ -73,10 +74,21 @@ public class ChatMessageRoute extends RouteBuilder {
         from("direct:chat-message")
             .routeId("chat-message")
 
-            // 1. IP-level rate limit (protects against flood even without a token)
+            // 1. IP-level rate limit (protects against flood even without a token).
+            // Proxy headers are used only when present; always fall back to the
+            // real TCP socket address which cannot be spoofed by the client.
             .process(exchange -> {
                 String ip = exchange.getIn().getHeader("X-Real-IP", String.class);
-                if (ip == null) ip = exchange.getIn().getHeader("X-Forwarded-For", String.class);
+                if (ip == null || ip.isBlank()) {
+                    ip = exchange.getIn().getHeader("X-Forwarded-For", String.class);
+                }
+                if (ip == null || ip.isBlank()) {
+                    HttpServletRequest req = exchange.getIn()
+                            .getHeader("CamelHttpServletRequest", HttpServletRequest.class);
+                    if (req != null) {
+                        ip = req.getRemoteAddr();
+                    }
+                }
                 rateLimitService.checkAndConsume(ip);
             })
 

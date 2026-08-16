@@ -6,6 +6,7 @@ import in.pandac.chat.entity.ChatSession;
 import in.pandac.chat.repository.ChatSessionRepository;
 import in.pandac.chat.service.JwtService;
 import in.pandac.chat.service.RateLimitService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.springframework.stereotype.Component;
@@ -31,18 +32,27 @@ public class ContactRegistrationProcessor implements Processor {
 
     @Override
     public void process(Exchange exchange) {
-        // Rate limiting based on IP address
+        // Rate limiting based on IP address.
+        // Proxy headers (X-Real-IP, X-Forwarded-For) are used only when present;
+        // always fall back to the real TCP socket address which cannot be spoofed.
         String clientIp = exchange.getIn().getHeader("X-Real-IP", String.class);
-        if (clientIp == null) {
+        if (clientIp == null || clientIp.isBlank()) {
             clientIp = exchange.getIn().getHeader("X-Forwarded-For", String.class);
+        }
+        if (clientIp == null || clientIp.isBlank()) {
+            HttpServletRequest req = exchange.getIn()
+                    .getHeader("CamelHttpServletRequest", HttpServletRequest.class);
+            if (req != null) {
+                clientIp = req.getRemoteAddr();
+            }
         }
         rateLimitService.checkAndConsume(clientIp);
 
         // Body was unmarshaled to ContactRequest by Camel REST DSL
         ContactRequest req = exchange.getIn().getBody(ContactRequest.class);
 
-        // Generate an 8-character sessionId for compact Telegram tags: [SID:a1b2c3d4]
-        String sessionId = UUID.randomUUID().toString().substring(0, 8);
+        // Use full UUID — 8-char prefix only has ~32 bits of entropy, easily enumerable
+        String sessionId = UUID.randomUUID().toString();
 
         // Persist session to H2
         ChatSession session = new ChatSession();

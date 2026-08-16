@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Two independent in-memory rate limiters:
@@ -37,8 +36,7 @@ public class RateLimitService {
     public void checkAndConsume(String ip) {
         if (ip == null || ip.isBlank()) return;
         TokenBucket bucket = ipBuckets.computeIfAbsent(ip, k -> new TokenBucket(maxRequestsPerMinute, 60));
-        bucket.refill();
-        if (!bucket.consume()) {
+        if (!bucket.tryConsume()) {
             throw new TooManyRequestsException("Rate limit exceeded. Please try again later.");
         }
     }
@@ -51,8 +49,7 @@ public class RateLimitService {
         if (sessionId == null || sessionId.isBlank()) return;
         TokenBucket bucket = sessionBuckets.computeIfAbsent(
                 sessionId, k -> new TokenBucket(maxMessagesPerSessionPerHour, 3600));
-        bucket.refill();
-        if (!bucket.consume()) {
+        if (!bucket.tryConsume()) {
             throw new TooManyRequestsException(
                 "Message limit reached for this session. Please try again later.");
         }
@@ -63,27 +60,31 @@ public class RateLimitService {
     private static class TokenBucket {
         private final int maxTokens;
         private final long windowSeconds;
-        private final AtomicInteger tokens;
-        private volatile long lastRefill;
+        private int tokens;
+        private long lastRefill;
 
         TokenBucket(int maxTokens, long windowSeconds) {
             this.maxTokens     = maxTokens;
             this.windowSeconds = windowSeconds;
-            this.tokens        = new AtomicInteger(maxTokens);
+            this.tokens        = maxTokens;
             this.lastRefill    = Instant.now().getEpochSecond();
         }
 
-        void refill() {
+        /**
+         * Atomically refills if the window has elapsed, then tries to consume one token.
+         * Synchronized on this instance so refill + consume is a single critical section.
+         */
+        synchronized boolean tryConsume() {
             long now = Instant.now().getEpochSecond();
             if (now - lastRefill >= windowSeconds) {
-                tokens.set(maxTokens);
+                tokens     = maxTokens;
                 lastRefill = now;
             }
-        }
-
-        boolean consume() {
-            int current = tokens.get();
-            return current > 0 && tokens.compareAndSet(current, current - 1);
+            if (tokens > 0) {
+                tokens--;
+                return true;
+            }
+            return false;
         }
     }
 }
