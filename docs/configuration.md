@@ -172,8 +172,11 @@ for the full picture. Relevant keys, all optional and blank/off by default:
 | `app.mcp.rag-url` | `MCP_RAG_URL` | External MCP server URL (Streamable HTTP). Blank = disabled entirely. |
 | `app.mcp.rag-endpoint` | `MCP_RAG_ENDPOINT` | Endpoint path on that server (default `/mcp`) |
 | `app.ai.default-mcp-enabled` | `MCP_ENABLED` | Default for whether personas use it; override per persona with `mcp=` in `persona.properties` |
+| — | `mcp-api-key=` (persona.properties only) | That persona's own API key for the RAG server — the only source of tenant identity; must be unique per persona, not shared |
 
-Wired in `backend/src/main/java/in/pandac/chat/config/McpRagConfig.java`. A
-connection attempt happens once at startup; if the server is unreachable, a
-warning is logged and that persona's tools stay unavailable until the backend
-restarts with the server reachable — chat itself keeps working either way.
+Wired in `backend/src/main/java/in/pandac/chat/config/McpRagConfig.java` —
+one MCP client per `mcp=true` persona (not one shared client), each
+authenticated with its own key. A connection attempt happens once at
+startup per persona; if the server is unreachable, a warning is logged and
+that persona's tools stay unavailable until the backend restarts with the
+server reachable — chat itself keeps working either way.

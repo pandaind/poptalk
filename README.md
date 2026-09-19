@@ -193,6 +193,10 @@ embeddings, a vector store) is a different problem from "serve a chat widget,"
 so PopTalk connects to whatever RAG/tool server you run, over MCP's Streamable
 HTTP transport, rather than owning that logic itself.
 
+**poptalk-rag** is a companion project that implements exactly this: a Spring
+Boot MCP server backed by Postgres/pgvector, with a Camel pipeline that
+auto-ingests a knowledge base per persona.
+
 Left unconfigured, nothing changes — no connection is attempted, no dependency
 is exercised. To plug one in:
 
@@ -202,19 +206,27 @@ MCP_RAG_ENDPOINT=/mcp        # default
 MCP_ENABLED=true             # default for all personas; override per persona below
 ```
 
-Enable it per persona in `persona.properties` (see [Multiple Personas](#multiple-personas)):
+Enable it per persona in `persona.properties` (see [Multiple Personas](#multiple-personas)),
+with that persona's own API key for the RAG server:
 
 ```properties
 mcp=true
+mcp-api-key=alice-key-123
 ```
 
+**Each persona needs its own key, not a shared one.** PopTalk opens one MCP
+connection per `mcp=true` persona, authenticated with that persona's key —
+the RAG server derives which tenant's data to search from the key itself,
+never from a header or a field the model could be prompt-injected into
+supplying. A shared key across personas would mean no real isolation between
+their knowledge bases.
+
 When enabled, the model can call whatever tools your MCP server exposes as
-part of answering — a typical RAG server exposes something like a
-`search_knowledge_base` tool the model calls when it needs more context than
-`context.txt` gives it. If the server is unreachable, that persona's tools are
-simply unavailable (logged as a warning at startup) — chat still works
-normally, just without that extra context, until the backend is restarted
-with the server reachable again.
+part of answering — poptalk-rag exposes a `search_knowledge_base` tool the
+model calls when it needs more context than `context.txt` gives it. If the
+server is unreachable, that persona's tools are simply unavailable (logged as
+a warning at startup) — chat still works normally, just without that extra
+context, until the backend is restarted with the server reachable again.
 
 ---
 

@@ -18,5 +18,9 @@ public record Persona(
         Double temperature,
         /** Whether this persona can call tools from the optional RAG MCP server (see McpRagConfig). */
         boolean mcpEnabled,
+        /** This persona's own API key for the RAG MCP server — the server derives which
+         *  tenant's data to search from this key, so it must be unique per persona. Only
+         *  meaningful when mcpEnabled is true. */
+        String mcpApiKey,
         String systemPrompt
 ) {}

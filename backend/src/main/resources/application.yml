@@ -120,6 +120,9 @@ app:
     # Whether personas can call tools from the RAG MCP server (app.mcp.rag-url)
     # unless their own persona.properties overrides it with mcp=true/false.
     default-mcp-enabled: ${MCP_ENABLED:false}
+    # Single-persona-mode API key for the RAG server; multi-persona mode uses
+    # mcp-api-key= per persona instead (see PersonaService).
+    default-mcp-api-key: ${MCP_API_KEY:}
     # Single-persona fallback — used only when personas-dir has no persona subdirectories.
     context-file: data/context.txt
     # Multi-persona: each subdirectory of personas-dir becomes a persona id

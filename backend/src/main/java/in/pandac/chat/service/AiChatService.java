@@ -1,5 +1,6 @@
 package in.pandac.chat.service;
 
+import in.pandac.chat.config.McpRagConfig.PersonaMcpToolProviders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.anthropic.AnthropicChatModel;
@@ -45,7 +46,7 @@ public class AiChatService {
     private final Map<String, ChatClient> chatClientsByProvider = new LinkedHashMap<>();
     private final ChatMemory chatMemory;
     private final PersonaService personaService;
-    private final ToolCallbackProvider mcpToolCallbackProvider;
+    private final PersonaMcpToolProviders mcpToolProviders;
 
     @Value("${app.ai.max-history-turns:8}")
     private int maxHistoryTurns;
@@ -56,9 +57,9 @@ public class AiChatService {
                          ObjectProvider<AnthropicChatModel> anthropic,
                          ObjectProvider<MistralAiChatModel> mistral,
                          ObjectProvider<DeepSeekChatModel> deepseek,
-                         ObjectProvider<ToolCallbackProvider> mcpToolCallbackProvider) {
+                         ObjectProvider<PersonaMcpToolProviders> mcpToolProviders) {
         this.personaService = personaService;
-        this.mcpToolCallbackProvider = mcpToolCallbackProvider.getIfAvailable();
+        this.mcpToolProviders = mcpToolProviders.getIfAvailable();
         this.chatMemory = MessageWindowChatMemory.builder()
                 .chatMemoryRepository(new InMemoryChatMemoryRepository())
                 .maxMessages(1000)
@@ -74,7 +75,7 @@ public class AiChatService {
         registerProvider("deepseek", deepseek.getIfAvailable(), memoryAdvisor);
 
         log.info("AI providers available: {}", chatClientsByProvider.keySet());
-        log.info("RAG MCP server: {}", this.mcpToolCallbackProvider != null ? "configured" : "not configured");
+        log.info("RAG MCP server: {}", this.mcpToolProviders != null ? "configured" : "not configured");
     }
 
     private void registerProvider(String key, ChatModel model, MessageChatMemoryAdvisor memoryAdvisor) {
@@ -114,8 +115,11 @@ public class AiChatService {
                 request = request.options(options.build());
             }
 
-            if (persona.mcpEnabled() && mcpToolCallbackProvider != null) {
-                request = request.toolCallbacks(mcpToolCallbackProvider);
+            if (persona.mcpEnabled() && mcpToolProviders != null) {
+                ToolCallbackProvider toolProvider = mcpToolProviders.get(persona.id());
+                if (toolProvider != null) {
+                    request = request.toolCallbacks(toolProvider);
+                }
             }
 
             String response = request.call().content();

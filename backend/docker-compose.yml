@@ -41,6 +41,7 @@ services:
       MCP_RAG_URL: ${MCP_RAG_URL:-}
       MCP_RAG_ENDPOINT: ${MCP_RAG_ENDPOINT:-/mcp}
       MCP_ENABLED: ${MCP_ENABLED:-false}
+      MCP_API_KEY: ${MCP_API_KEY:-}
       CHAT_MODE: ${CHAT_MODE:-AI}
       OWNER_NAME: ${OWNER_NAME:-PandaC}
       OWNER_WEBSITE_URL: ${OWNER_WEBSITE_URL:-}

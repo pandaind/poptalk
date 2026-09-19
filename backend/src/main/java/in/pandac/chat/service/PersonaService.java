@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,10 +35,10 @@ import java.util.Properties;
  * widget's {@code data-persona} value). An optional {@code persona.properties}
  * file inside it (keys: {@code ownerName}, {@code chatTitle},
  * {@code avatarInitial}, {@code websiteUrl}, {@code provider}, {@code model},
- * {@code temperature}, {@code mcp}) overrides the global branding and AI
- * provider defaults for that persona — each persona can talk to a different
- * AI provider (see AiChatService) and independently opt into the optional
- * RAG MCP server (see McpRagConfig).
+ * {@code temperature}, {@code mcp}, {@code mcp-api-key}) overrides the global
+ * branding and AI provider defaults for that persona — each persona can talk
+ * to a different AI provider (see AiChatService) and independently opt into
+ * the optional RAG MCP server with its own API key (see McpRagConfig).
  *
  * <p>Personas are loaded once at startup — editing a context file or adding a
  * new persona requires a restart, same as the original single-persona setup.
@@ -70,6 +71,9 @@ public class PersonaService {
 
     @Value("${app.ai.default-mcp-enabled:false}")
     private boolean defaultMcpEnabled;
+
+    @Value("${app.ai.default-mcp-api-key:}")
+    private String defaultMcpApiKey;
 
     private final Map<String, Persona> personas = new LinkedHashMap<>();
     private String defaultPersonaId;
@@ -104,7 +108,7 @@ public class PersonaService {
             personas.put(defaultPersona, new Persona(
                     defaultPersona, defaultOwnerName, defaultChatTitle, defaultAvatarInitial,
                     blankToNull(defaultWebsiteUrl), defaultProvider, null, null, defaultMcpEnabled,
-                    buildSystemPrompt(context)));
+                    blankToNull(defaultMcpApiKey), buildSystemPrompt(context)));
         }
 
         defaultPersonaId = personas.containsKey(defaultPersona)
@@ -130,6 +134,11 @@ public class PersonaService {
 
     public Persona getDefaultPersona() {
         return personas.get(defaultPersonaId);
+    }
+
+    /** All configured personas — used by McpRagConfig to build one MCP client per mcp=true persona. */
+    public Collection<Persona> getAllPersonas() {
+        return personas.values();
     }
 
     /** True when more than one persona is configured — used to decide whether Telegram/log output should be tagged. */
@@ -162,10 +171,11 @@ public class PersonaService {
                 Double temperature = parseDoubleOrNull(props.getProperty("temperature"), id);
                 boolean mcpEnabled = Boolean.parseBoolean(
                         props.getProperty("mcp", Boolean.toString(defaultMcpEnabled)));
+                String mcpApiKey = blankToNull(props.getProperty("mcp-api-key", defaultMcpApiKey));
 
                 String context = loadContextFile(contextPath);
                 personas.put(id, new Persona(id, ownerName, chatTitle, avatarInitial, websiteUrl,
-                        provider, model, temperature, mcpEnabled, buildSystemPrompt(context)));
+                        provider, model, temperature, mcpEnabled, mcpApiKey, buildSystemPrompt(context)));
             }
         } catch (IOException e) {
             log.error("Failed to scan personas directory '{}': {}", dir, e.getMessage());
