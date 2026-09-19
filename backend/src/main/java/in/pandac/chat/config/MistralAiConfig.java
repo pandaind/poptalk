@@ -24,10 +24,10 @@ public class MistralAiConfig {
     @Value("${spring.ai.mistralai.base-url:https://api.mistral.ai}")
     private String baseUrl;
 
-    @Value("${spring.ai.mistralai.chat.options.model:mistral-small-latest}")
+    @Value("${spring.ai.mistralai.chat.model:mistral-small-latest}")
     private String modelName;
 
-    @Value("${spring.ai.mistralai.chat.options.temperature:0.3}")
+    @Value("${spring.ai.mistralai.chat.temperature:0.3}")
     private Double temperature;
 
     @Bean
@@ -42,7 +42,7 @@ public class MistralAiConfig {
     public MistralAiChatModel mistralAiChatModel(MistralAiApi mistralAiApi) {
         return MistralAiChatModel.builder()
                 .mistralAiApi(mistralAiApi)
-                .defaultOptions(MistralAiChatOptions.builder()
+                .options(MistralAiChatOptions.builder()
                         .model(modelName)
                         .temperature(temperature)
                         .build())

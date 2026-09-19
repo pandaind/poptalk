@@ -112,7 +112,9 @@ public class AiChatService {
                 if (persona.temperature() != null) {
                     options.temperature(persona.temperature());
                 }
-                request = request.options(options.build());
+                // ChatClient's .options() takes a ChatOptions.Builder, not a built
+                // instance, as of Spring AI 2.0 — pass the builder itself.
+                request = request.options(options);
             }
 
             if (persona.mcpEnabled() && mcpToolProviders != null) {

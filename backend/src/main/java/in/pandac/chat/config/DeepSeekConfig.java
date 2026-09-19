@@ -23,10 +23,10 @@ public class DeepSeekConfig {
     @Value("${spring.ai.deepseek.base-url:https://api.deepseek.com}")
     private String baseUrl;
 
-    @Value("${spring.ai.deepseek.chat.options.model:deepseek-chat}")
+    @Value("${spring.ai.deepseek.chat.model:deepseek-chat}")
     private String modelName;
 
-    @Value("${spring.ai.deepseek.chat.options.temperature:0.3}")
+    @Value("${spring.ai.deepseek.chat.temperature:0.3}")
     private Double temperature;
 
     @Bean
@@ -41,7 +41,7 @@ public class DeepSeekConfig {
     public DeepSeekChatModel deepSeekChatModel(DeepSeekApi deepSeekApi) {
         return DeepSeekChatModel.builder()
                 .deepSeekApi(deepSeekApi)
-                .defaultOptions(DeepSeekChatOptions.builder()
+                .options(DeepSeekChatOptions.builder()
                         .model(modelName)
                         .temperature(temperature)
                         .build())

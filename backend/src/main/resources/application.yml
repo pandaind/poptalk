@@ -49,39 +49,34 @@ spring:
     ollama:
       base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
       chat:
-        options:
-          model: ${OLLAMA_MODEL:llama3.2}
-          temperature: ${OLLAMA_TEMPERATURE:0.3}
-          num-predict: ${OLLAMA_MAX_TOKENS:150}
+        model: ${OLLAMA_MODEL:llama3.2}
+        temperature: ${OLLAMA_TEMPERATURE:0.3}
+        num-predict: ${OLLAMA_MAX_TOKENS:150}
     openai:
       api-key: ${OPENAI_API_KEY:}
       base-url: ${OPENAI_BASE_URL:https://api.openai.com}
       chat:
-        options:
-          model: ${OPENAI_MODEL:gpt-4o-mini}
-          temperature: ${OPENAI_TEMPERATURE:0.3}
+        model: ${OPENAI_MODEL:gpt-4o-mini}
+        temperature: ${OPENAI_TEMPERATURE:0.3}
     anthropic:
       api-key: ${ANTHROPIC_API_KEY:}
       base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
       chat:
-        options:
-          model: ${ANTHROPIC_MODEL:claude-sonnet-5}
-          temperature: ${ANTHROPIC_TEMPERATURE:0.3}
-          max-tokens: ${ANTHROPIC_MAX_TOKENS:1024}
+        model: ${ANTHROPIC_MODEL:claude-sonnet-5}
+        temperature: ${ANTHROPIC_TEMPERATURE:0.3}
+        max-tokens: ${ANTHROPIC_MAX_TOKENS:1024}
     mistralai:
       api-key: ${MISTRAL_API_KEY:}
       base-url: ${MISTRAL_BASE_URL:https://api.mistral.ai}
       chat:
-        options:
-          model: ${MISTRAL_MODEL:mistral-small-latest}
-          temperature: ${MISTRAL_TEMPERATURE:0.3}
+        model: ${MISTRAL_MODEL:mistral-small-latest}
+        temperature: ${MISTRAL_TEMPERATURE:0.3}
     deepseek:
       api-key: ${DEEPSEEK_API_KEY:}
       base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
       chat:
-        options:
-          model: ${DEEPSEEK_MODEL:deepseek-chat}
-          temperature: ${DEEPSEEK_TEMPERATURE:0.3}
+        model: ${DEEPSEEK_MODEL:deepseek-chat}
+        temperature: ${DEEPSEEK_TEMPERATURE:0.3}
 
 camel:
   component:
