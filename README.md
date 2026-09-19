@@ -193,9 +193,10 @@ embeddings, a vector store) is a different problem from "serve a chat widget,"
 so PopTalk connects to whatever RAG/tool server you run, over MCP's Streamable
 HTTP transport, rather than owning that logic itself.
 
-**poptalk-rag** is a companion project that implements exactly this: a Spring
-Boot MCP server backed by Postgres/pgvector, with a Camel pipeline that
-auto-ingests a knowledge base per persona.
+[**poptalk-rag**](https://github.com/pandaind/poptalk-rag) is a companion
+project that implements exactly this: a Spring Boot MCP server backed by
+Postgres/pgvector, with a Camel pipeline that auto-ingests a knowledge base
+per persona.
 
 Left unconfigured, nothing changes — no connection is attempted, no dependency
 is exercised. To plug one in:
