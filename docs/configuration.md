@@ -11,12 +11,26 @@
 | `TELEGRAM_ADMIN_CHAT_ID` | — | ✅ | Your Telegram user ID (from @userinfobot) |
 | `JWT_SECRET` | — | ✅ | Long random hex string — `openssl rand -hex 64` |
 | `H2_PASSWORD` | — | ✅ | **Alphanumeric only** — no special characters |
+| `AI_PROVIDER` | `ollama` | — | Default provider: `ollama`, `openai`, `anthropic`, `mistral`, or `deepseek` — see [AI Providers](#ai-providers) |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | — | Ollama API base URL |
 | `OLLAMA_MODEL` | `llama3.2` | — | Model name (e.g. `gemma3`, `mistral`) |
 | `OLLAMA_TEMPERATURE` | `0.3` | — | Response creativity (0.0 = precise, 1.0 = creative) |
 | `OLLAMA_MAX_TOKENS` | `150` | — | Max tokens per response (keep short for chat) |
 | `OLLAMA_API_KEY` | _(empty)_ | — | API key for Ollama Cloud; leave empty for local |
-| `CHAT_MODE` | `AI` | — | `AI` — Ollama responds / `MANUAL` — Telegram relay |
+| `OPENAI_API_KEY` | _(empty)_ | — | Required to use `AI_PROVIDER=openai` |
+| `OPENAI_MODEL` | `gpt-4o-mini` | — | OpenAI model name |
+| `OPENAI_TEMPERATURE` | `0.3` | — | Response creativity |
+| `ANTHROPIC_API_KEY` | _(empty)_ | — | Required to use `AI_PROVIDER=anthropic` |
+| `ANTHROPIC_MODEL` | `claude-sonnet-5` | — | Anthropic model name |
+| `ANTHROPIC_TEMPERATURE` | `0.3` | — | Response creativity |
+| `ANTHROPIC_MAX_TOKENS` | `1024` | — | Anthropic requires a max-tokens cap on every request |
+| `MISTRAL_API_KEY` | _(empty)_ | — | Required to use `AI_PROVIDER=mistral` |
+| `MISTRAL_MODEL` | `mistral-small-latest` | — | Mistral model name |
+| `MISTRAL_TEMPERATURE` | `0.3` | — | Response creativity |
+| `DEEPSEEK_API_KEY` | _(empty)_ | — | Required to use `AI_PROVIDER=deepseek` |
+| `DEEPSEEK_MODEL` | `deepseek-chat` | — | DeepSeek model name |
+| `DEEPSEEK_TEMPERATURE` | `0.3` | — | Response creativity |
+| `CHAT_MODE` | `AI` | — | `AI` — configured provider responds / `MANUAL` — Telegram relay |
 | `CORS_ALLOWED_ORIGIN` | `https://pandac.in` | ✅ | Your website's exact origin URL |
 | `OWNER_WEBSITE_URL` | _(empty)_ | — | Optional — shown in the AI's fallback reply if it can't respond |
 | `HOST_PORT` | `9097` | — | Host port mapped to container's 8080 |
@@ -127,5 +141,18 @@ in the [README](../README.md#multiple-personas). Relevant `application.yml` keys
 | `app.ai.context-file` | `data/context.txt` | Single-persona fallback, used when no persona subdirectories exist |
 | `app.ai.personas-dir` | `data/personas` | Directory scanned for persona subdirectories |
 | `app.ai.default-persona` | `default` | Persona id used when `data-persona` is omitted or unknown |
+| `app.ai.default-provider` | `ollama` (via `AI_PROVIDER`) | Provider personas use unless their own `persona.properties` overrides it |
 
 Personas are loaded once at startup — adding or editing one requires a restart.
+
+---
+
+## AI Providers
+
+See "AI Providers" in the [README](../README.md#ai-providers) for the full picture —
+each persona can use a different provider (`ollama`, `openai`, `anthropic`, `mistral`,
+or `deepseek`), set via `provider=` in its `persona.properties`, with `model=` and
+`temperature=` overrides available too. Every provider's `ChatModel` is wired up
+regardless of which one is active (see `backend/src/main/java/in/pandac/chat/config/`);
+one left with a blank API key just won't be available, and a persona pointed at an
+unconfigured provider falls back to the AI's generic "trouble connecting" reply.

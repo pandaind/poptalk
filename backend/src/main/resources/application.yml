@@ -19,6 +19,26 @@ spring:
     console:
       enabled: false            # NEVER expose in production
   ai:
+    # PopTalk wires every provider's ChatModel itself (see config/*Config.java)
+    # so personas can each use a different one at once — disable Spring AI's
+    # own single-provider auto-selection, which would otherwise pick exactly
+    # one and leave the rest unavailable.
+    model:
+      chat: none
+      # The OpenAI and Mistral starters each bring several other model-type
+      # auto-configurations (embedding, image, audio, moderation, OCR) that
+      # PopTalk doesn't use and that fail hard at startup without their own
+      # API key even though nothing references them — disable all of them.
+      embedding: none
+      image: none
+      moderation: none
+      ocr: none
+      audio:
+        speech: none
+        transcription: none
+    chat:
+      client:
+        enabled: false
     ollama:
       base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
       chat:
@@ -26,6 +46,35 @@ spring:
           model: ${OLLAMA_MODEL:llama3.2}
           temperature: ${OLLAMA_TEMPERATURE:0.3}
           num-predict: ${OLLAMA_MAX_TOKENS:150}
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      chat:
+        options:
+          model: ${OPENAI_MODEL:gpt-4o-mini}
+          temperature: ${OPENAI_TEMPERATURE:0.3}
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
+      chat:
+        options:
+          model: ${ANTHROPIC_MODEL:claude-sonnet-5}
+          temperature: ${ANTHROPIC_TEMPERATURE:0.3}
+          max-tokens: ${ANTHROPIC_MAX_TOKENS:1024}
+    mistralai:
+      api-key: ${MISTRAL_API_KEY:}
+      base-url: ${MISTRAL_BASE_URL:https://api.mistral.ai}
+      chat:
+        options:
+          model: ${MISTRAL_MODEL:mistral-small-latest}
+          temperature: ${MISTRAL_TEMPERATURE:0.3}
+    deepseek:
+      api-key: ${DEEPSEEK_API_KEY:}
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      chat:
+        options:
+          model: ${DEEPSEEK_MODEL:deepseek-chat}
+          temperature: ${DEEPSEEK_TEMPERATURE:0.3}
 
 camel:
   component:
@@ -52,6 +101,9 @@ app:
   ai:
     mode: ${CHAT_MODE:AI}
     api-key: ${OLLAMA_API_KEY:}
+    # Which provider personas use unless their own persona.properties overrides it:
+    # ollama, openai, anthropic, mistral, or deepseek.
+    default-provider: ${AI_PROVIDER:ollama}
     # Single-persona fallback — used only when personas-dir has no persona subdirectories.
     context-file: data/context.txt
     # Multi-persona: each subdirectory of personas-dir becomes a persona id

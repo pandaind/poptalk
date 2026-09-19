@@ -10,5 +10,11 @@ public record Persona(
         String chatTitle,
         String avatarInitial,
         String websiteUrl,
+        /** Which AI provider this persona talks to: "ollama", "openai", "anthropic", "mistral", or "deepseek". */
+        String provider,
+        /** Optional per-persona model override; null means use that provider's configured default model. */
+        String model,
+        /** Optional per-persona temperature override; null means use that provider's configured default. */
+        Double temperature,
         String systemPrompt
 ) {}

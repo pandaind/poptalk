@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Docker & Docker Compose (for the backend)
-- [Ollama](https://ollama.ai) running locally or a cloud Ollama API key — for AI mode
+- An AI provider for AI mode — [Ollama](https://ollama.ai) running locally (free, no API key), or an API key for OpenAI, Anthropic, Mistral, or DeepSeek (see [AI Providers](../README.md#ai-providers))
 - A [Telegram bot](https://t.me/BotFather) — for Telegram notifications or manual mode
 
 ---
@@ -37,11 +37,16 @@ TELEGRAM_ADMIN_CHAT_ID=your_chat_id_here
 JWT_SECRET=$(openssl rand -hex 64)
 H2_PASSWORD=SomeAlphanumericPassword123
 
+AI_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.2
 CHAT_MODE=AI
 CORS_ALLOWED_ORIGIN=https://yourwebsite.com
 ```
+
+Using a cloud provider instead of local Ollama? Set `AI_PROVIDER` to `openai`,
+`anthropic`, `mistral`, or `deepseek` and fill in that provider's `*_API_KEY` —
+see `.env.example` and [AI Providers](../README.md#ai-providers) in the README.
 
 > ⚠️ **`H2_PASSWORD` must be alphanumeric only.** Special characters like `$`, `!`, `@`, `#` break H2 JDBC URL parsing and will prevent the app from starting.
 

@@ -21,7 +21,7 @@ PopTalk is a self-hostable chat widget backed by an LLM that answers using conte
 
 You write a `context.txt` file describing what the AI should know — yourself, in first person, or your business, speaking as "we" — deploy the backend, embed one `<script>` tag, and visitors can chat with it directly on your site. One backend can also serve multiple personas at once (see [Multiple Personas](#multiple-personas)) — handy for an agency, a team, or a business running several sites.
 
-**Backend:** Spring Boot + Apache Camel + Spring AI (Ollama)  
+**Backend:** Spring Boot + Apache Camel + Spring AI (Ollama, OpenAI, Anthropic, Mistral, or DeepSeek — see [AI Providers](#ai-providers))  
 **Widget:** Zero-dependency vanilla JS, Shadow DOM isolated, ~17 kB / ~7 kB gzipped
 
 ---
@@ -124,9 +124,13 @@ ownerName=Alice Smith
 chatTitle=Chat with Alice
 avatarInitial=A
 websiteUrl=https://alice.example.com
+provider=anthropic
+model=claude-opus-5
+temperature=0.7
 ```
 
-Any property left out falls back to the global `app.branding.*` values. As soon as
+Any property left out falls back to the global `app.branding.*` / `app.ai.*` values
+(see [AI Providers](#ai-providers) for `provider`/`model`/`temperature`). As soon as
 `backend/data/personas/` contains at least one valid subdirectory, multi-persona
 mode activates automatically — the directory name becomes the persona id.
 
@@ -141,13 +145,51 @@ editing a persona requires a backend restart.
 
 ---
 
+## AI Providers
+
+PopTalk isn't tied to Ollama — it can talk to Ollama, OpenAI, Anthropic (Claude),
+Mistral AI, or DeepSeek, and **different personas can each use a different one**
+at the same time (one persona on a free local Ollama model, another on Claude,
+for example).
+
+Every provider is wired up regardless of which one you use — just leave the ones
+you're not using with a blank API key in `.env`; they simply won't be available.
+Pick the default with `AI_PROVIDER` (falls back to `ollama`):
+
+```env
+AI_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_MODEL=claude-sonnet-5
+```
+
+| Provider | Env var prefix | Needs |
+|---|---|---|
+| `ollama` | `OLLAMA_*` | Nothing — local install, or an Ollama Cloud key |
+| `openai` | `OPENAI_*` | `OPENAI_API_KEY` |
+| `anthropic` | `ANTHROPIC_*` | `ANTHROPIC_API_KEY` |
+| `mistral` | `MISTRAL_*` | `MISTRAL_API_KEY` |
+| `deepseek` | `DEEPSEEK_*` | `DEEPSEEK_API_KEY` |
+
+See `.env.example` for the full list of `*_MODEL` / `*_TEMPERATURE` / `*_BASE_URL`
+variables per provider.
+
+For multi-persona deployments, override per persona in its `persona.properties`
+(`provider`, `model`, `temperature` — shown above); anything left unset falls
+back to `AI_PROVIDER` and that provider's configured defaults.
+
+> Google Gemini isn't wired up yet — Spring AI's only Gemini integration goes
+> through Vertex AI, which needs a GCP project rather than a simple API key.
+> Open an issue if you want it added.
+
+---
+
 ## Chat Modes
 
 Set `CHAT_MODE` in your `.env`:
 
 | Mode | Behaviour |
 |---|---|
-| `AI` | Ollama model responds automatically using your `context.txt` |
+| `AI` | The configured AI provider responds automatically using your `context.txt` |
 | `MANUAL` | Messages are forwarded to your Telegram. You reply via the Telegram bot. |
 
 Switch by changing the env var and restarting — no rebuild needed.

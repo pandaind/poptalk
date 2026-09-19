@@ -2,16 +2,32 @@ package in.pandac.chat.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.deepseek.DeepSeekChatModel;
+import org.springframework.ai.mistralai.MistralAiChatModel;
+import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
- * Spring AI 2 chat service backed by a locally running Ollama model.
+ * Chats via whichever AI provider the requested persona is configured for.
+ * Each provider's ChatModel is wired independently (see the *Config classes
+ * in in.pandac.chat.config) so several can be active at once — a persona
+ * picks one by name ("ollama", "openai", "anthropic", "mistral", "deepseek")
+ * via its provider property, letting one backend mix, say, a free local
+ * Ollama model for one persona and Claude for another.
  */
 @Service
 public class AiChatService {
@@ -21,15 +37,19 @@ public class AiChatService {
     private static final String CHAT_MEMORY_CONVERSATION_ID_KEY = "chat_memory_conversation_id";
     private static final String CHAT_MEMORY_RETRIEVE_SIZE_KEY = "chat_memory_retrieve_size";
 
-    private final ChatClient chatClient;
+    private final Map<String, ChatClient> chatClientsByProvider = new LinkedHashMap<>();
     private final ChatMemory chatMemory;
     private final PersonaService personaService;
 
     @Value("${app.ai.max-history-turns:8}")
     private int maxHistoryTurns;
 
-    public AiChatService(ChatClient.Builder chatClientBuilder,
-                         PersonaService personaService) {
+    public AiChatService(PersonaService personaService,
+                         ObjectProvider<OllamaChatModel> ollama,
+                         ObjectProvider<OpenAiChatModel> openai,
+                         ObjectProvider<AnthropicChatModel> anthropic,
+                         ObjectProvider<MistralAiChatModel> mistral,
+                         ObjectProvider<DeepSeekChatModel> deepseek) {
         this.personaService = personaService;
         this.chatMemory = MessageWindowChatMemory.builder()
                 .chatMemoryRepository(new InMemoryChatMemoryRepository())
@@ -38,30 +58,60 @@ public class AiChatService {
 
         // No defaultSystem() here — the system prompt is persona-specific and
         // supplied per call below, since one backend may serve several personas.
-        this.chatClient = chatClientBuilder
-                .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
-                .build();
+        MessageChatMemoryAdvisor memoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
+        registerProvider("ollama", ollama.getIfAvailable(), memoryAdvisor);
+        registerProvider("openai", openai.getIfAvailable(), memoryAdvisor);
+        registerProvider("anthropic", anthropic.getIfAvailable(), memoryAdvisor);
+        registerProvider("mistral", mistral.getIfAvailable(), memoryAdvisor);
+        registerProvider("deepseek", deepseek.getIfAvailable(), memoryAdvisor);
+
+        log.info("AI providers available: {}", chatClientsByProvider.keySet());
+    }
+
+    private void registerProvider(String key, ChatModel model, MessageChatMemoryAdvisor memoryAdvisor) {
+        if (model == null) {
+            return;
+        }
+        chatClientsByProvider.put(key, ChatClient.builder(model).defaultAdvisors(memoryAdvisor).build());
     }
 
     public String chat(String sessionId, String personaId, String userName, String userMessage) {
         Persona persona = personaService.getPersona(personaId);
+        ChatClient chatClient = chatClientsByProvider.get(persona.provider());
+        if (chatClient == null) {
+            log.error("No AI provider wired for '{}' (persona '{}'); known providers: {}",
+                    persona.provider(), persona.id(), chatClientsByProvider.keySet());
+            return fallbackResponse(userName, persona);
+        }
+
         try {
             String promptText = String.format("[Visitor: %s] %s", userName, userMessage);
 
-            String response = chatClient.prompt()
+            ChatClient.ChatClientRequestSpec request = chatClient.prompt()
                     .system(persona.systemPrompt())
                     .user(promptText)
                     .advisors(advisor -> advisor
                             .param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId)
-                            .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, maxHistoryTurns))
-                    .call()
-                    .content();
+                            .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, maxHistoryTurns));
+
+            if (persona.model() != null || persona.temperature() != null) {
+                ChatOptions.Builder options = ChatOptions.builder();
+                if (persona.model() != null) {
+                    options.model(persona.model());
+                }
+                if (persona.temperature() != null) {
+                    options.temperature(persona.temperature());
+                }
+                request = request.options(options.build());
+            }
+
+            String response = request.call().content();
 
             log.debug("AI response for session {}: {}", sessionId, response);
             return response != null ? response.trim() : fallbackResponse(userName, persona);
 
         } catch (Exception e) {
-            log.error("AI chat error for session {}: {}", sessionId, e.getMessage());
+            log.error("AI chat error for session {} (provider '{}'): {}", sessionId, persona.provider(), e.getMessage());
             return fallbackResponse(userName, persona);
         }
     }
@@ -78,4 +128,3 @@ public class AiChatService {
         return String.format("Hi %s! I'm having a little trouble connecting right now. %s", userName, retryHint);
     }
 }
-

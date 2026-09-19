@@ -120,10 +120,31 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- ── Spring AI — Ollama ──────────────────────────────────── -->
+        <!-- ── Spring AI — chat providers (per-persona selectable) ──── -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-model-ollama</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-openai</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-anthropic</artifactId>
+        </dependency>
+        <!-- Google Gemini intentionally not included yet: Spring AI's only Gemini
+             integration goes through Vertex AI, which needs a GCP project + location
+             + service-account credentials rather than a simple API key — a heavier
+             setup than every other provider here. Add spring-ai-starter-model-vertex-ai-gemini
+             plus a VertexAiGeminiConfig (same pattern as OpenAiConfig) if you want it. -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-mistral-ai</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-deepseek</artifactId>
         </dependency>
 
         <!-- ── Testing ───────────────────────────────────────────────── -->

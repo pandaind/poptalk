@@ -33,8 +33,10 @@ import java.util.Properties;
  * inside. Each subdirectory name becomes the persona id (used as the
  * widget's {@code data-persona} value). An optional {@code persona.properties}
  * file inside it (keys: {@code ownerName}, {@code chatTitle},
- * {@code avatarInitial}, {@code websiteUrl}) overrides the global branding
- * defaults for that persona.
+ * {@code avatarInitial}, {@code websiteUrl}, {@code provider}, {@code model},
+ * {@code temperature}) overrides the global branding and AI provider
+ * defaults for that persona — each persona can talk to a different AI
+ * provider (see AiChatService).
  *
  * <p>Personas are loaded once at startup — editing a context file or adding a
  * new persona requires a restart, same as the original single-persona setup.
@@ -61,6 +63,9 @@ public class PersonaService {
 
     @Value("${app.branding.website-url:}")
     private String defaultWebsiteUrl;
+
+    @Value("${app.ai.default-provider:ollama}")
+    private String defaultProvider;
 
     private final Map<String, Persona> personas = new LinkedHashMap<>();
     private String defaultPersonaId;
@@ -94,7 +99,8 @@ public class PersonaService {
             String context = loadContextFile(Path.of(contextFile));
             personas.put(defaultPersona, new Persona(
                     defaultPersona, defaultOwnerName, defaultChatTitle, defaultAvatarInitial,
-                    blankToNull(defaultWebsiteUrl), buildSystemPrompt(context)));
+                    blankToNull(defaultWebsiteUrl), defaultProvider, null, null,
+                    buildSystemPrompt(context)));
         }
 
         defaultPersonaId = personas.containsKey(defaultPersona)
@@ -147,9 +153,13 @@ public class PersonaService {
                                 ? ownerName.substring(0, 1).toUpperCase()
                                 : defaultAvatarInitial);
                 String websiteUrl = blankToNull(props.getProperty("websiteUrl", defaultWebsiteUrl));
+                String provider = props.getProperty("provider", defaultProvider);
+                String model = blankToNull(props.getProperty("model"));
+                Double temperature = parseDoubleOrNull(props.getProperty("temperature"), id);
 
                 String context = loadContextFile(contextPath);
-                personas.put(id, new Persona(id, ownerName, chatTitle, avatarInitial, websiteUrl, buildSystemPrompt(context)));
+                personas.put(id, new Persona(id, ownerName, chatTitle, avatarInitial, websiteUrl,
+                        provider, model, temperature, buildSystemPrompt(context)));
             }
         } catch (IOException e) {
             log.error("Failed to scan personas directory '{}': {}", dir, e.getMessage());
@@ -158,6 +168,18 @@ public class PersonaService {
 
     private static String blankToNull(String value) {
         return (value == null || value.isBlank()) ? null : value;
+    }
+
+    private Double parseDoubleOrNull(String value, String personaId) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Double.parseDouble(value.trim());
+        } catch (NumberFormatException e) {
+            log.warn("Ignoring invalid temperature '{}' for persona '{}'", value, personaId);
+            return null;
+        }
     }
 
     private Properties loadPersonaProperties(Path path) {
