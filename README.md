@@ -127,6 +127,7 @@ websiteUrl=https://alice.example.com
 provider=anthropic
 model=claude-opus-5
 temperature=0.7
+mcp=true
 ```
 
 Any property left out falls back to the global `app.branding.*` / `app.ai.*` values
@@ -180,6 +181,40 @@ back to `AI_PROVIDER` and that provider's configured defaults.
 > Google Gemini isn't wired up yet — Spring AI's only Gemini integration goes
 > through Vertex AI, which needs a GCP project rather than a simple API key.
 > Open an issue if you want it added.
+
+---
+
+## RAG / Tools via MCP (optional)
+
+PopTalk can plug into an external [MCP](https://modelcontextprotocol.io) server
+for retrieval-augmented generation or any other tool — deliberately kept as a
+**separate project**, not something built into this repo. RAG (chunking,
+embeddings, a vector store) is a different problem from "serve a chat widget,"
+so PopTalk connects to whatever RAG/tool server you run, over MCP's Streamable
+HTTP transport, rather than owning that logic itself.
+
+Left unconfigured, nothing changes — no connection is attempted, no dependency
+is exercised. To plug one in:
+
+```env
+MCP_RAG_URL=https://your-rag-server.example.com
+MCP_RAG_ENDPOINT=/mcp        # default
+MCP_ENABLED=true             # default for all personas; override per persona below
+```
+
+Enable it per persona in `persona.properties` (see [Multiple Personas](#multiple-personas)):
+
+```properties
+mcp=true
+```
+
+When enabled, the model can call whatever tools your MCP server exposes as
+part of answering — a typical RAG server exposes something like a
+`search_knowledge_base` tool the model calls when it needs more context than
+`context.txt` gives it. If the server is unreachable, that persona's tools are
+simply unavailable (logged as a warning at startup) — chat still works
+normally, just without that extra context, until the backend is restarted
+with the server reachable again.
 
 ---
 

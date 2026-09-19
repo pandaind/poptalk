@@ -2,6 +2,7 @@ target/
 .env
 data/*.mv.db
 data/*.trace.db
+data/*.lock.db
 .DS_Store
 .idea/
 *.iml

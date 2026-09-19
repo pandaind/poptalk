@@ -147,6 +147,12 @@
             <artifactId>spring-ai-starter-model-deepseek</artifactId>
         </dependency>
 
+        <!-- ── Spring AI — MCP client (optional RAG/tool plug-in) ───── -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-mcp-client</artifactId>
+        </dependency>
+
         <!-- ── Testing ───────────────────────────────────────────────── -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

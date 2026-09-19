@@ -3,6 +3,7 @@ backend/target/
 backend/.env
 backend/data/*.mv.db
 backend/data/*.trace.db
+backend/data/*.lock.db
 
 # ── Widget ────────────────────────────────────────────────────
 widget/node_modules/

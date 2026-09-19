@@ -14,6 +14,7 @@ import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,10 @@ import java.util.Map;
  * picks one by name ("ollama", "openai", "anthropic", "mistral", "deepseek")
  * via its provider property, letting one backend mix, say, a free local
  * Ollama model for one persona and Claude for another.
+ *
+ * <p>Personas with {@code mcpEnabled} also get tool access to the optional
+ * RAG MCP server (see {@link in.pandac.chat.config.McpRagConfig}) — a
+ * separate project PopTalk connects to, not something built into this repo.
  */
 @Service
 public class AiChatService {
@@ -40,6 +45,7 @@ public class AiChatService {
     private final Map<String, ChatClient> chatClientsByProvider = new LinkedHashMap<>();
     private final ChatMemory chatMemory;
     private final PersonaService personaService;
+    private final ToolCallbackProvider mcpToolCallbackProvider;
 
     @Value("${app.ai.max-history-turns:8}")
     private int maxHistoryTurns;
@@ -49,8 +55,10 @@ public class AiChatService {
                          ObjectProvider<OpenAiChatModel> openai,
                          ObjectProvider<AnthropicChatModel> anthropic,
                          ObjectProvider<MistralAiChatModel> mistral,
-                         ObjectProvider<DeepSeekChatModel> deepseek) {
+                         ObjectProvider<DeepSeekChatModel> deepseek,
+                         ObjectProvider<ToolCallbackProvider> mcpToolCallbackProvider) {
         this.personaService = personaService;
+        this.mcpToolCallbackProvider = mcpToolCallbackProvider.getIfAvailable();
         this.chatMemory = MessageWindowChatMemory.builder()
                 .chatMemoryRepository(new InMemoryChatMemoryRepository())
                 .maxMessages(1000)
@@ -66,6 +74,7 @@ public class AiChatService {
         registerProvider("deepseek", deepseek.getIfAvailable(), memoryAdvisor);
 
         log.info("AI providers available: {}", chatClientsByProvider.keySet());
+        log.info("RAG MCP server: {}", this.mcpToolCallbackProvider != null ? "configured" : "not configured");
     }
 
     private void registerProvider(String key, ChatModel model, MessageChatMemoryAdvisor memoryAdvisor) {
@@ -103,6 +112,10 @@ public class AiChatService {
                     options.temperature(persona.temperature());
                 }
                 request = request.options(options.build());
+            }
+
+            if (persona.mcpEnabled() && mcpToolCallbackProvider != null) {
+                request = request.toolCallbacks(mcpToolCallbackProvider);
             }
 
             String response = request.call().content();

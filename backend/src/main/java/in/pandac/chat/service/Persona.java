@@ -16,5 +16,7 @@ public record Persona(
         String model,
         /** Optional per-persona temperature override; null means use that provider's configured default. */
         Double temperature,
+        /** Whether this persona can call tools from the optional RAG MCP server (see McpRagConfig). */
+        boolean mcpEnabled,
         String systemPrompt
 ) {}

@@ -30,6 +30,9 @@
 | `DEEPSEEK_API_KEY` | _(empty)_ | — | Required to use `AI_PROVIDER=deepseek` |
 | `DEEPSEEK_MODEL` | `deepseek-chat` | — | DeepSeek model name |
 | `DEEPSEEK_TEMPERATURE` | `0.3` | — | Response creativity |
+| `MCP_RAG_URL` | _(empty)_ | — | Optional — URL of an external MCP server for RAG/tools, see [RAG / Tools via MCP](../README.md#rag--tools-via-mcp-optional) |
+| `MCP_RAG_ENDPOINT` | `/mcp` | — | MCP Streamable HTTP endpoint path on that server |
+| `MCP_ENABLED` | `false` | — | Default for whether personas can use MCP tools; override per persona with `mcp=` |
 | `CHAT_MODE` | `AI` | — | `AI` — configured provider responds / `MANUAL` — Telegram relay |
 | `CORS_ALLOWED_ORIGIN` | `https://pandac.in` | ✅ | Your website's exact origin URL |
 | `OWNER_WEBSITE_URL` | _(empty)_ | — | Optional — shown in the AI's fallback reply if it can't respond |
@@ -156,3 +159,21 @@ or `deepseek`), set via `provider=` in its `persona.properties`, with `model=` a
 regardless of which one is active (see `backend/src/main/java/in/pandac/chat/config/`);
 one left with a blank API key just won't be available, and a persona pointed at an
 unconfigured provider falls back to the AI's generic "trouble connecting" reply.
+
+---
+
+## RAG / Tools via MCP
+
+See "RAG / Tools via MCP" in the [README](../README.md#rag--tools-via-mcp-optional)
+for the full picture. Relevant keys, all optional and blank/off by default:
+
+| Key | Env var | Description |
+|---|---|---|
+| `app.mcp.rag-url` | `MCP_RAG_URL` | External MCP server URL (Streamable HTTP). Blank = disabled entirely. |
+| `app.mcp.rag-endpoint` | `MCP_RAG_ENDPOINT` | Endpoint path on that server (default `/mcp`) |
+| `app.ai.default-mcp-enabled` | `MCP_ENABLED` | Default for whether personas use it; override per persona with `mcp=` in `persona.properties` |
+
+Wired in `backend/src/main/java/in/pandac/chat/config/McpRagConfig.java`. A
+connection attempt happens once at startup; if the server is unreachable, a
+warning is logged and that persona's tools stay unavailable until the backend
+restarts with the server reachable — chat itself keeps working either way.

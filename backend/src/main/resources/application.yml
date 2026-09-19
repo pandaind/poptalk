@@ -39,6 +39,13 @@ spring:
     chat:
       client:
         enabled: false
+    mcp:
+      client:
+        # PopTalk wires its own MCP client for the optional RAG server (see
+        # config/McpRagConfig.java) rather than this auto-configuration, which
+        # requires its connection URL property to already exist (even blank)
+        # and throws at startup otherwise — incompatible with "absent by default".
+        enabled: false
     ollama:
       base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
       chat:
@@ -82,6 +89,12 @@ camel:
       authorization-token: ${TELEGRAM_BOT_TOKEN}
 
 app:
+  mcp:
+    # Optional — point this at a RAG (or any other tool-providing) server
+    # speaking MCP over Streamable HTTP. Absent by default: personas behave
+    # exactly as if MCP didn't exist. See config/McpRagConfig.java.
+    rag-url: ${MCP_RAG_URL:}
+    rag-endpoint: ${MCP_RAG_ENDPOINT:/mcp}
   branding:
     owner-name: ${OWNER_NAME:PandaC}
     chat-title: ${CHAT_TITLE:Chat with Me}
@@ -104,6 +117,9 @@ app:
     # Which provider personas use unless their own persona.properties overrides it:
     # ollama, openai, anthropic, mistral, or deepseek.
     default-provider: ${AI_PROVIDER:ollama}
+    # Whether personas can call tools from the RAG MCP server (app.mcp.rag-url)
+    # unless their own persona.properties overrides it with mcp=true/false.
+    default-mcp-enabled: ${MCP_ENABLED:false}
     # Single-persona fallback — used only when personas-dir has no persona subdirectories.
     context-file: data/context.txt
     # Multi-persona: each subdirectory of personas-dir becomes a persona id
