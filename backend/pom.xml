@@ -13,10 +13,10 @@
     </parent>
 
     <groupId>in.pandac</groupId>
-    <artifactId>pandac-chat</artifactId>
+    <artifactId>poptalk-backend</artifactId>
     <version>1.0.0</version>
-    <name>pandac-chat</name>
-    <description>PandaC Chat Backend – Spring Boot + Apache Camel Telegram + Spring AI (Ollama)</description>
+    <name>poptalk-backend</name>
+    <description>PopTalk Backend – Spring Boot + Apache Camel Telegram + Spring AI (Ollama)</description>
     <packaging>jar</packaging>
 
     <properties>
@@ -150,6 +150,9 @@
     </repositories>
 
     <build>
+        <!-- Fixed name (no version suffix) so the Dockerfile's COPY doesn't need
+             to track the version number in its jar filename. -->
+        <finalName>${project.artifactId}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

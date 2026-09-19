@@ -3,7 +3,7 @@ version: '3.8'
 services:
   backend:
     build: .
-    container_name: pandac-chat-backend
+    container_name: poptalk-backend
     restart: unless-stopped
     ports:
       - "${HOST_PORT:-9097}:8080"
@@ -22,14 +22,15 @@ services:
       OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
       CHAT_MODE: ${CHAT_MODE:-AI}
       OWNER_NAME: ${OWNER_NAME:-PandaC}
+      OWNER_WEBSITE_URL: ${OWNER_WEBSITE_URL:-}
       CHAT_TITLE: ${CHAT_TITLE:-Chat with Me}
       CHAT_AVATAR_INITIAL: ${CHAT_AVATAR_INITIAL:-P}
       CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-https://pandac.in}
     volumes:
       # Persist H2 database on host (survives container rebuilds)
       - ./data:/app/data
-      # Optional: override personal-context without rebuilding the image
-      # - ./data/personal-context.txt:/app/data/personal-context.txt
+      # Optional: override the context file without rebuilding the image
+      # - ./data/context.txt:/app/data/context.txt
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health 2>/dev/null | grep -q '\"status\":\"UP\"' || exit 1"]
       interval: 30s

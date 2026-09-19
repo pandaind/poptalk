@@ -19,8 +19,8 @@
 ## Step 2 — Clone and Configure
 
 ```bash
-git clone https://github.com/pandaind/pandac-chat.git
-cd pandac-chat/backend
+git clone https://github.com/pandaind/poptalk.git
+cd poptalk/backend
 cp .env.example .env
 ```
 
@@ -40,16 +40,17 @@ H2_PASSWORD=SomeAlphanumericPassword123
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.2
 CHAT_MODE=AI
-CORS_ALLOWED_ORIGIN=https://yourblog.com
+CORS_ALLOWED_ORIGIN=https://yourwebsite.com
 ```
 
 > ⚠️ **`H2_PASSWORD` must be alphanumeric only.** Special characters like `$`, `!`, `@`, `#` break H2 JDBC URL parsing and will prevent the app from starting.
 
 ---
 
-## Step 3 — Write Your Personal Context
+## Step 3 — Write Your Context
 
-Edit `backend/data/personal-context.txt`. Write about yourself **in first person** — this is what the AI reads to impersonate you.
+Edit `backend/data/context.txt`. Describe yourself in first person, or your
+business speaking as "we" — this is what the AI reads to answer as that persona.
 
 ```text
 ## Who I Am
@@ -59,7 +60,17 @@ I'm Jane Doe, a full-stack developer with 8 years of experience...
 I primarily work with Go, Python, and React...
 ```
 
-The more detail you provide, the more accurately the AI represents you.
+Or, for a business persona:
+
+```text
+## Who We Are
+We're Acme Widgets, a small team building browser extensions for developers...
+
+## What We Offer
+Our flagship product is Acme Inspector, a DevTools panel for...
+```
+
+The more detail you provide, the more accurately the AI represents that persona.
 
 ---
 
@@ -81,11 +92,11 @@ curl http://localhost:9097/api/config
 
 ## Step 5 — Embed the Widget
 
-Add this snippet to your blog's HTML before `</body>`:
+Add this snippet to your site's HTML before `</body>`:
 
 ```html
 <script
-  src="https://cdn.jsdelivr.net/gh/pandaind/pandac-chat@master/widget/dist/pandac-chat.min.js"
+  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@master/widget/dist/poptalk.min.js"
   data-api-url="https://your-backend-domain.com"
   data-accent="#6C63FF"
   defer>
@@ -136,9 +147,9 @@ Restart the container. Incoming messages are forwarded to your Telegram. Reply v
 
 ## Updating Your Context Without Rebuilding
 
-`personal-context.txt` is volume-mounted into the container at `/app/data/`. You can update it without a full rebuild:
+`context.txt` is volume-mounted into the container at `/app/data/`. You can update it without a full rebuild:
 
 ```bash
-vim backend/data/personal-context.txt
+vim backend/data/context.txt
 docker-compose restart backend
 ```

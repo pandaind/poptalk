@@ -1,8 +1,8 @@
 {
-  "name": "pandac-chat-widget",
+  "name": "poptalk-widget",
   "version": "1.0.0",
-  "description": "Embeddable AI-powered personal chat popup widget",
-  "main": "dist/pandac-chat.min.js",
+  "description": "Embeddable AI chat widget for any website",
+  "main": "dist/poptalk.min.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

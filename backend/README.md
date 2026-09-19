@@ -1,6 +1,6 @@
-# PandaC Chat Backend
+# PopTalk Backend
 
-A Spring Boot + Apache Camel backend for the `pandac.in` popup chat widget.
+A Spring Boot + Apache Camel backend for the PopTalk chat widget — a self-hostable AI chat widget you can embed on any website.
 
 ## Features
 - Integrates directly with Telegram Bot API via `camel-telegram` (Producer and Consumer).
@@ -8,6 +8,7 @@ A Spring Boot + Apache Camel backend for the `pandac.in` popup chat widget.
 - Stateless REST API secured with HS256 JWTs.
 - IP-based rate limiting on registration endpoints.
 - Auto-purges sessions older than 7 days.
+- Multi-persona support — one backend can serve several personas, each with its own context and branding.
 
 ## Development
 
@@ -35,7 +36,7 @@ Build the fat JAR:
 ```
 Run the JAR:
 ```bash
-java -jar target/pandac-chat-backend-1.0.0.jar
+java -jar target/poptalk-backend.jar
 ```
 *Ensure all environment variables from `.env.example` are set on the server.*
 

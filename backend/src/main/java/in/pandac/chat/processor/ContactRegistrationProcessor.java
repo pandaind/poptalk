@@ -5,6 +5,8 @@ import in.pandac.chat.dto.ContactResponse;
 import in.pandac.chat.entity.ChatSession;
 import in.pandac.chat.repository.ChatSessionRepository;
 import in.pandac.chat.service.JwtService;
+import in.pandac.chat.service.Persona;
+import in.pandac.chat.service.PersonaService;
 import in.pandac.chat.service.RateLimitService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.camel.Exchange;
@@ -20,14 +22,17 @@ public class ContactRegistrationProcessor implements Processor {
     private final ChatSessionRepository sessionRepository;
     private final JwtService jwtService;
     private final RateLimitService rateLimitService;
+    private final PersonaService personaService;
 
     public ContactRegistrationProcessor(
             ChatSessionRepository sessionRepository,
             JwtService jwtService,
-            RateLimitService rateLimitService) {
+            RateLimitService rateLimitService,
+            PersonaService personaService) {
         this.sessionRepository = sessionRepository;
         this.jwtService = jwtService;
         this.rateLimitService = rateLimitService;
+        this.personaService = personaService;
     }
 
     @Override
@@ -54,12 +59,17 @@ public class ContactRegistrationProcessor implements Processor {
         // Use full UUID — 8-char prefix only has ~32 bits of entropy, easily enumerable
         String sessionId = UUID.randomUUID().toString();
 
+        // Resolve which persona this session talks to (?persona=<id> query param, else the default)
+        String requestedPersona = exchange.getIn().getHeader("persona", String.class);
+        Persona persona = personaService.getPersona(requestedPersona);
+
         // Persist session to H2
         ChatSession session = new ChatSession();
         session.setSessionId(sessionId);
         session.setName(req.getName());
         session.setContact(req.getContact());
         session.setContactType(req.getContactType());
+        session.setPersonaId(persona.id());
         session.setCreatedAt(LocalDateTime.now());
         session.setExpiresAt(LocalDateTime.now().plusDays(1)); // 24h validity
         session.setActive(true);
@@ -82,5 +92,6 @@ public class ContactRegistrationProcessor implements Processor {
         // Pass the original request to the next processor to build the Telegram message
         exchange.getIn().setBody(req);
         exchange.getIn().setHeader("sessionId", sessionId);
+        exchange.getIn().setHeader("personaOwnerName", persona.ownerName());
     }
 }

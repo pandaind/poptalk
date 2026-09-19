@@ -23,28 +23,33 @@ public class AiChatService {
 
     private final ChatClient chatClient;
     private final ChatMemory chatMemory;
+    private final PersonaService personaService;
 
     @Value("${app.ai.max-history-turns:8}")
     private int maxHistoryTurns;
 
     public AiChatService(ChatClient.Builder chatClientBuilder,
-                         PersonalContextService contextService) {
+                         PersonaService personaService) {
+        this.personaService = personaService;
         this.chatMemory = MessageWindowChatMemory.builder()
                 .chatMemoryRepository(new InMemoryChatMemoryRepository())
                 .maxMessages(1000)
                 .build();
-                
+
+        // No defaultSystem() here — the system prompt is persona-specific and
+        // supplied per call below, since one backend may serve several personas.
         this.chatClient = chatClientBuilder
-                .defaultSystem(contextService.getSystemPrompt())
                 .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
                 .build();
     }
 
-    public String chat(String sessionId, String userName, String userMessage) {
+    public String chat(String sessionId, String personaId, String userName, String userMessage) {
+        Persona persona = personaService.getPersona(personaId);
         try {
             String promptText = String.format("[Visitor: %s] %s", userName, userMessage);
 
             String response = chatClient.prompt()
+                    .system(persona.systemPrompt())
                     .user(promptText)
                     .advisors(advisor -> advisor
                             .param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId)
@@ -53,11 +58,11 @@ public class AiChatService {
                     .content();
 
             log.debug("AI response for session {}: {}", sessionId, response);
-            return response != null ? response.trim() : fallbackResponse(userName);
+            return response != null ? response.trim() : fallbackResponse(userName, persona);
 
         } catch (Exception e) {
             log.error("AI chat error for session {}: {}", sessionId, e.getMessage());
-            return fallbackResponse(userName);
+            return fallbackResponse(userName, persona);
         }
     }
 
@@ -66,10 +71,11 @@ public class AiChatService {
         log.debug("Cleared AI memory for session {}", sessionId);
     }
 
-    private String fallbackResponse(String userName) {
-        return String.format(
-            "Hi %s! I'm having a little trouble connecting right now. " +
-            "Please check pandac.in or try again in a moment.", userName);
+    private String fallbackResponse(String userName, Persona persona) {
+        String retryHint = persona.websiteUrl() != null
+                ? "Please check " + persona.websiteUrl() + " or try again in a moment."
+                : "Please try again in a moment.";
+        return String.format("Hi %s! I'm having a little trouble connecting right now. %s", userName, retryHint);
     }
 }
 

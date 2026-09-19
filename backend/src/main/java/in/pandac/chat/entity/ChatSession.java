@@ -23,6 +23,10 @@ public class ChatSession {
     @Column(name = "contact_type", nullable = false, length = 10)
     private String contactType;
 
+    /** Which persona this session talks to. Nullable so existing rows (pre-multi-persona) fall back to the default persona in code. */
+    @Column(name = "persona_id", length = 100)
+    private String personaId;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -44,6 +48,8 @@ public class ChatSession {
     public void setContact(String contact) { this.contact = contact; }
     public String getContactType() { return contactType; }
     public void setContactType(String contactType) { this.contactType = contactType; }
+    public String getPersonaId() { return personaId; }
+    public void setPersonaId(String personaId) { this.personaId = personaId; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getExpiresAt() { return expiresAt; }

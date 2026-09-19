@@ -11,6 +11,8 @@ import in.pandac.chat.repository.ChatMessageRepository;
 import in.pandac.chat.repository.ChatSessionRepository;
 import in.pandac.chat.service.AiChatService;
 import in.pandac.chat.service.ChatModeService;
+import in.pandac.chat.service.Persona;
+import in.pandac.chat.service.PersonaService;
 import in.pandac.chat.service.RateLimitService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.camel.Exchange;
@@ -35,17 +37,20 @@ public class ChatMessageRoute extends RouteBuilder {
     private final RateLimitService rateLimitService;
     private final ChatModeService chatModeService;
     private final AiChatService aiChatService;
+    private final PersonaService personaService;
 
     public ChatMessageRoute(ChatSessionRepository sessionRepo,
                             ChatMessageRepository messageRepo,
                             RateLimitService rateLimitService,
                             ChatModeService chatModeService,
-                            AiChatService aiChatService) {
+                            AiChatService aiChatService,
+                            PersonaService personaService) {
         this.sessionRepo      = sessionRepo;
         this.messageRepo      = messageRepo;
         this.rateLimitService = rateLimitService;
         this.chatModeService  = chatModeService;
         this.aiChatService    = aiChatService;
+        this.personaService   = personaService;
     }
 
     @Override
@@ -141,9 +146,10 @@ public class ChatMessageRoute extends RouteBuilder {
                 ChatMessageRequest req     = exchange.getIn().getBody(ChatMessageRequest.class);
                 ChatSession        session = exchange.getIn().getHeader("chatSession", ChatSession.class);
                 String             sid     = session.getSessionId();
+                Persona            persona = personaService.getPersona(session.getPersonaId());
 
                 // Call Ollama via Spring AI
-                String aiResponse = aiChatService.chat(sid, session.getName(), req.getMessage());
+                String aiResponse = aiChatService.chat(sid, persona.id(), session.getName(), req.getMessage());
 
                 // Persist AI response
                 ChatMessage aiMsg = new ChatMessage();
@@ -155,9 +161,10 @@ public class ChatMessageRoute extends RouteBuilder {
                 messageRepo.save(aiMsg);
 
                 // Notify Telegram with user + AI pair (you still see the conversation)
+                String personaTag = personaService.isMultiPersona() ? " (" + persona.ownerName() + ")" : "";
                 String telegramText = String.format(
-                    "🤖 *AI Mode* | *%s*\n\n👤 User: %s\n🤖 AI:   %s\n\n`[SID:%s]`",
-                    session.getName(), req.getMessage(), aiResponse, sid);
+                    "🤖 *AI Mode*%s | *%s*\n\n👤 User: %s\n🤖 AI:   %s\n\n`[SID:%s]`",
+                    personaTag, session.getName(), req.getMessage(), aiResponse, sid);
 
                 exchange.getIn().setHeader(TelegramConstants.TELEGRAM_CHAT_ID, adminChatId);
                 exchange.getIn().setBody(OutgoingTextMessage.builder().text(telegramText).build());
@@ -180,11 +187,13 @@ public class ChatMessageRoute extends RouteBuilder {
             .process(exchange -> {
                 ChatMessageRequest req     = exchange.getIn().getBody(ChatMessageRequest.class);
                 ChatSession        session = exchange.getIn().getHeader("chatSession", ChatSession.class);
+                Persona            persona = personaService.getPersona(session.getPersonaId());
 
                 // Format for Telegram — admin replies with [SID:xxx] as before
+                String personaTag = personaService.isMultiPersona() ? " (" + persona.ownerName() + ")" : "";
                 String telegramText = String.format(
-                    "💬 *%s* says:\n\n%s\n\n`[SID:%s]`",
-                    session.getName(), req.getMessage(), session.getSessionId());
+                    "💬%s *%s* says:\n\n%s\n\n`[SID:%s]`",
+                    personaTag, session.getName(), req.getMessage(), session.getSessionId());
 
                 exchange.getIn().setHeader(TelegramConstants.TELEGRAM_CHAT_ID, adminChatId);
                 exchange.getIn().setBody(OutgoingTextMessage.builder().text(telegramText).build());

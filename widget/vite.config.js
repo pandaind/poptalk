@@ -15,9 +15,9 @@ export default defineConfig(({ command }) => {
   return {
     build: {
       lib: {
-        entry: 'src/pandac-chat.js',
-        name: 'PandacChat',
-        fileName: () => 'pandac-chat.min.js',
+        entry: 'src/poptalk.js',
+        name: 'PopTalk',
+        fileName: () => 'poptalk.min.js',
         formats: ['iife'],
       },
       outDir: 'dist',
