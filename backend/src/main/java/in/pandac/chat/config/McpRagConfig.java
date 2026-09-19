@@ -104,10 +104,15 @@ public class McpRagConfig {
     }
 
     private McpSyncClient buildClient(Persona persona) {
+        // .customizeRequest(Consumer<HttpRequest.Builder>) was renamed/reshaped to
+        // .httpRequestCustomizer(...) in MCP SDK 2.0.0 (bumped alongside Spring AI
+        // 2.0's own major version) — the customizer callback now also receives the
+        // method/URI/body/transport-context, none of which we need here.
         HttpClientStreamableHttpTransport transport = HttpClientStreamableHttpTransport
                 .builder(ragUrl)
                 .endpoint(ragEndpoint)
-                .customizeRequest(builder -> builder.header("Authorization", "Bearer " + persona.mcpApiKey()))
+                .httpRequestCustomizer((builder, method, uri, body, context) ->
+                        builder.header("Authorization", "Bearer " + persona.mcpApiKey()))
                 .build();
 
         McpSyncClient client = McpClient.sync(transport)

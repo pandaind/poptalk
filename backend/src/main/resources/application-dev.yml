@@ -12,9 +12,8 @@ spring:
     ollama:
       base-url: http://localhost:11434
       chat:
-        options:
-          temperature: 0.3
-          num-predict: 150
+        temperature: 0.3
+        num-predict: 150
 
 app:
   cors:
