@@ -38,10 +38,12 @@ public class ChatRegistrationRoute extends RouteBuilder {
             
             // 3. Format message for Telegram
             .process("telegramNotificationProcessor")
-            
-            // 4. Send to Telegram API (native camel component)
-            .to("telegram:bots")
-            
+
+            // 4. Hand off to TelegramNotificationRoute (fire-and-forget) —
+            // see its Javadoc for why this isn't a direct .to("telegram:bots")
+            // call from this HTTP-triggered route.
+            .to(TelegramNotificationRoute.ENDPOINT)
+
             // 5. Return the JWT response we prepped in step 2
             .setBody(header("contactResponse"));
     }

@@ -14,6 +14,8 @@ import in.pandac.chat.service.ChatModeService;
 import in.pandac.chat.service.Persona;
 import in.pandac.chat.service.PersonaService;
 import in.pandac.chat.service.RateLimitService;
+import in.pandac.chat.util.ClientIpResolver;
+import in.pandac.chat.util.TelegramMessageFormatter;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
@@ -83,17 +85,12 @@ public class ChatMessageRoute extends RouteBuilder {
             // Proxy headers are used only when present; always fall back to the
             // real TCP socket address which cannot be spoofed by the client.
             .process(exchange -> {
-                String ip = exchange.getIn().getHeader("X-Real-IP", String.class);
-                if (ip == null || ip.isBlank()) {
-                    ip = exchange.getIn().getHeader("X-Forwarded-For", String.class);
-                }
-                if (ip == null || ip.isBlank()) {
-                    HttpServletRequest req = exchange.getIn()
-                            .getHeader("CamelHttpServletRequest", HttpServletRequest.class);
-                    if (req != null) {
-                        ip = req.getRemoteAddr();
-                    }
-                }
+                HttpServletRequest req = exchange.getIn()
+                        .getHeader("CamelHttpServletRequest", HttpServletRequest.class);
+                String ip = ClientIpResolver.resolve(
+                        exchange.getIn().getHeader("X-Real-IP", String.class),
+                        exchange.getIn().getHeader("X-Forwarded-For", String.class),
+                        req != null ? req.getRemoteAddr() : null);
                 rateLimitService.checkAndConsume(ip);
             })
 
@@ -161,16 +158,17 @@ public class ChatMessageRoute extends RouteBuilder {
                 messageRepo.save(aiMsg);
 
                 // Notify Telegram with user + AI pair (you still see the conversation)
-                String personaTag = personaService.isMultiPersona() ? " (" + persona.ownerName() + ")" : "";
-                String telegramText = String.format(
-                    "🤖 *AI Mode*%s | *%s*\n\n👤 User: %s\n🤖 AI:   %s\n\n`[SID:%s]`",
-                    personaTag, session.getName(), req.getMessage(), aiResponse, sid);
+                String telegramText = TelegramMessageFormatter.aiModeNotification(
+                        personaService.isMultiPersona(), persona.ownerName(),
+                        session.getName(), req.getMessage(), aiResponse, sid);
 
                 exchange.getIn().setHeader(TelegramConstants.TELEGRAM_CHAT_ID, adminChatId);
                 exchange.getIn().setBody(OutgoingTextMessage.builder().text(telegramText).build());
                 exchange.getIn().setHeader("aiResponse", aiResponse);
             })
-            .to("telegram:bots")
+            // Hand off to TelegramNotificationRoute (fire-and-forget) — see
+            // its Javadoc for why this isn't a direct .to("telegram:bots").
+            .to(TelegramNotificationRoute.ENDPOINT)
             // Return AI response immediately (no polling required)
             .process(exchange -> {
                 String aiResponse = exchange.getIn().getHeader("aiResponse", String.class);
@@ -198,7 +196,7 @@ public class ChatMessageRoute extends RouteBuilder {
                 exchange.getIn().setHeader(TelegramConstants.TELEGRAM_CHAT_ID, adminChatId);
                 exchange.getIn().setBody(OutgoingTextMessage.builder().text(telegramText).build());
             })
-            .to("telegram:bots")
+            .to(TelegramNotificationRoute.ENDPOINT)
             // Response is null — frontend will poll /api/v1/chat/reply
             .process(exchange -> exchange.getIn().setBody(
                 new ChatMessageResponse(UUID.randomUUID().toString(), Instant.now().toString(), null)
