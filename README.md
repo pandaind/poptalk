@@ -7,7 +7,7 @@
 [![Backend CI](https://github.com/pandaind/poptalk/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/pandaind/poptalk/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-6C63FF.svg)](LICENSE)
 [![Java 21](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.org/projects/jdk/21/)
-[![Spring Boot 3.3](https://img.shields.io/badge/Spring%20Boot-3.3-green.svg)](https://spring.io/projects/spring-boot)
+[![Spring Boot 4.0](https://img.shields.io/badge/Spring%20Boot-4.0-green.svg)](https://spring.io/projects/spring-boot)
 
 *Not a generic assistant — it answers as the persona you give it: you, your business, a support bot, whatever fits your site.*
 
