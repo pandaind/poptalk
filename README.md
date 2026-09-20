@@ -26,12 +26,6 @@ You write a `context.txt` file describing what the AI should know — yourself, 
 
 ---
 
-## Architecture
-
-![Architecture](archi.gif)
-
----
-
 ## Quick Start (5 minutes)
 
 ### 1. Clone & configure
