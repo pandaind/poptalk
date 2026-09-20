@@ -97,6 +97,51 @@ class AiChatServiceTest {
     }
 
     @Test
+    void chatStreamEmitsEachChunkFromTheProvider() {
+        OllamaChatModel ollama = ollamaStreaming("Hel", "lo", " there!");
+        PersonaService personaService = personaServiceFor(persona("default", "ollama", null, null, false));
+        AiChatService service = new AiChatService(personaService,
+                providerOf(ollama), providerOf(null), providerOf(null), providerOf(null), providerOf(null),
+                providerOf(null));
+
+        java.util.List<String> chunks = service.chatStream("session-1", "default", "Visitor", "Hi!")
+                .collectList().block();
+
+        assertThat(chunks).containsExactly("Hel", "lo", " there!");
+    }
+
+    @Test
+    void chatStreamFallsBackWhenThePersonasProviderIsNotWiredUp() {
+        PersonaService personaService = personaServiceFor(persona("default", "openai", null, null, false));
+        AiChatService service = new AiChatService(personaService,
+                providerOf(null), providerOf(null), providerOf(null), providerOf(null), providerOf(null),
+                providerOf(null));
+
+        java.util.List<String> chunks = service.chatStream("session-1", "default", "Visitor", "Hi!")
+                .collectList().block();
+
+        assertThat(chunks).hasSize(1);
+        assertThat(chunks.get(0)).contains("having a little trouble");
+    }
+
+    @Test
+    void chatStreamFallsBackWithoutPropagatingWhenTheModelStreamErrors() {
+        OllamaChatModel ollama = mock(OllamaChatModel.class);
+        when(ollama.getOptions()).thenReturn(OllamaChatOptions.builder().build());
+        when(ollama.stream(any(Prompt.class))).thenReturn(reactor.core.publisher.Flux.error(new RuntimeException("connection refused")));
+        PersonaService personaService = personaServiceFor(persona("default", "ollama", null, null, false));
+        AiChatService service = new AiChatService(personaService,
+                providerOf(ollama), providerOf(null), providerOf(null), providerOf(null), providerOf(null),
+                providerOf(null));
+
+        java.util.List<String> chunks = service.chatStream("session-1", "default", "Visitor", "Hi!")
+                .collectList().block();
+
+        assertThat(chunks).hasSize(1);
+        assertThat(chunks.get(0)).contains("having a little trouble");
+    }
+
+    @Test
     void clearMemoryNeverThrowsForAnUnknownSession() {
         PersonaService personaService = personaServiceFor(persona("default", "ollama", null, null, false));
         AiChatService service = new AiChatService(personaService,
@@ -127,6 +172,16 @@ class AiChatServiceTest {
         OllamaChatModel model = mock(OllamaChatModel.class);
         when(model.getOptions()).thenReturn(OllamaChatOptions.builder().build());
         when(model.call(any(Prompt.class))).thenReturn(cannedResponse(responseText));
+        return model;
+    }
+
+    private static OllamaChatModel ollamaStreaming(String... chunks) {
+        OllamaChatModel model = mock(OllamaChatModel.class);
+        when(model.getOptions()).thenReturn(OllamaChatOptions.builder().build());
+        java.util.List<ChatResponse> responses = java.util.Arrays.stream(chunks)
+                .map(AiChatServiceTest::cannedResponse)
+                .toList();
+        when(model.stream(any(Prompt.class))).thenReturn(reactor.core.publisher.Flux.fromIterable(responses));
         return model;
     }
 

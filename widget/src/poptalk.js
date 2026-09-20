@@ -32,6 +32,7 @@ import rawCSS from './styles.css?inline';
   let sessionId = sessionStorage.getItem('pt_session_id')|| null;
   let isOpen    = false;
   let isWaiting = false;
+  let chatMode  = 'AI'; // from GET /api/config — "AI" streams, "MANUAL" polls for a reply
 
   // ── Shadow DOM host ───────────────────────────────────────────────────────
   const host = document.createElement('div');
@@ -111,6 +112,7 @@ import rawCSS from './styles.css?inline';
         const data = await res.json();
         if (data.chatTitle)     titleEl.textContent  = data.chatTitle;
         if (data.avatarInitial) avatarEl.textContent = data.avatarInitial.charAt(0).toUpperCase();
+        if (data.chatMode)      chatMode = data.chatMode;
       }
     } catch (_) { /* use defaults */ }
   }
@@ -216,7 +218,7 @@ import rawCSS from './styles.css?inline';
 
     isWaiting = true;
     sendBtn.disabled = true;
-    const typing = showTyping();
+    showTyping();
 
     if (!(await ensureSession())) {
       removeTyping();
@@ -225,6 +227,20 @@ import rawCSS from './styles.css?inline';
       return;
     }
 
+    if (chatMode === 'AI') {
+      await sendMessageStreaming(text);
+    } else {
+      await sendMessageBlocking(text);
+    }
+
+    isWaiting = false;
+    sendBtn.disabled = input.value.trim().length === 0;
+    scrollToBottom();
+  }
+
+  // MANUAL mode: unchanged request/response round trip — there's no AI reply
+  // to stream, the frontend polls /api/v1/chat/reply separately for it.
+  async function sendMessageBlocking(text) {
     try {
       const res = await fetch(`${cfg.apiUrl}/api/v1/chat/message`, {
         method:  'POST',
@@ -255,11 +271,100 @@ import rawCSS from './styles.css?inline';
       removeTyping();
       appendError(t.errorNetwork);
       console.error('[poptalk] send error:', err);
-    } finally {
-      isWaiting = false;
-      sendBtn.disabled = input.value.trim().length === 0;
-      scrollToBottom();
     }
+  }
+
+  // AI mode: reads the reply as Server-Sent Events and appends each chunk to
+  // a live bubble as it arrives. Uses fetch + a manual reader rather than
+  // EventSource, since EventSource can't send the Authorization header this
+  // endpoint requires.
+  async function sendMessageStreaming(text) {
+    let res;
+    try {
+      res = await fetch(`${cfg.apiUrl}/api/v1/chat/stream`, {
+        method:  'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ message: text }),
+      });
+    } catch (err) {
+      removeTyping();
+      appendError(t.errorNetwork);
+      console.error('[poptalk] stream error:', err);
+      return;
+    }
+
+    removeTyping();
+
+    if (res.status === 401) {
+      token = null; sessionId = null;
+      sessionStorage.removeItem('pt_token');
+      sessionStorage.removeItem('pt_session_id');
+      appendError(t.errorSessionExpired);
+      return;
+    }
+    if (res.status === 429) {
+      appendError(t.errorRateLimited);
+      return;
+    }
+    if (!res.ok || !res.body) {
+      appendError(t.errorGeneric);
+      return;
+    }
+
+    const bubble = appendBubble('ai', '');
+    let gotAnyText = false;
+
+    try {
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let boundary;
+        while ((boundary = buffer.indexOf('\n\n')) !== -1) {
+          const rawEvent = buffer.slice(0, boundary);
+          buffer = buffer.slice(boundary + 2);
+          const { event, data } = parseSseEvent(rawEvent);
+
+          if (event === 'error') {
+            if (!gotAnyText) bubble.remove();
+            appendError(t.errorGeneric);
+            return;
+          }
+          if (data != null && event !== 'done') {
+            bubble.textContent += data;
+            gotAnyText = true;
+            scrollToBottom();
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[poptalk] stream read error:', err);
+      if (!gotAnyText) {
+        bubble.remove();
+        appendError(t.errorNetwork);
+      }
+    }
+  }
+
+  function parseSseEvent(rawEvent) {
+    let event = 'message';
+    const dataLines = [];
+    for (const line of rawEvent.split('\n')) {
+      if (line.startsWith('event:')) {
+        event = line.slice(6).trim();
+      } else if (line.startsWith('data:')) {
+        dataLines.push(line.slice(5).replace(/^ /, ''));
+      }
+    }
+    return { event, data: dataLines.length ? dataLines.join('\n') : null };
   }
 
   // ── Toggle popup ──────────────────────────────────────────────────────────

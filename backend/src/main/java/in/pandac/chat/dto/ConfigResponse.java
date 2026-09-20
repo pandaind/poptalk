@@ -7,5 +7,7 @@ package in.pandac.chat.dto;
 public record ConfigResponse(
         String ownerName,
         String chatTitle,
-        String avatarInitial
+        String avatarInitial,
+        /** "AI" or "MANUAL" — lets the widget pick the streaming vs. polling send path. */
+        String chatMode
 ) {}

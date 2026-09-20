@@ -8,6 +8,7 @@ import in.pandac.chat.service.JwtService;
 import in.pandac.chat.service.Persona;
 import in.pandac.chat.service.PersonaService;
 import in.pandac.chat.service.RateLimitService;
+import in.pandac.chat.util.ClientIpResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
@@ -37,20 +38,15 @@ public class ContactRegistrationProcessor implements Processor {
 
     @Override
     public void process(Exchange exchange) {
-        // Rate limiting based on IP address.
-        // Proxy headers (X-Real-IP, X-Forwarded-For) are used only when present;
-        // always fall back to the real TCP socket address which cannot be spoofed.
-        String clientIp = exchange.getIn().getHeader("X-Real-IP", String.class);
-        if (clientIp == null || clientIp.isBlank()) {
-            clientIp = exchange.getIn().getHeader("X-Forwarded-For", String.class);
-        }
-        if (clientIp == null || clientIp.isBlank()) {
-            HttpServletRequest req = exchange.getIn()
-                    .getHeader("CamelHttpServletRequest", HttpServletRequest.class);
-            if (req != null) {
-                clientIp = req.getRemoteAddr();
-            }
-        }
+        // Rate limiting based on IP address. Proxy headers are used only when
+        // present; always fall back to the real TCP socket address, which
+        // cannot be spoofed by the client.
+        HttpServletRequest servletRequest = exchange.getIn()
+                .getHeader("CamelHttpServletRequest", HttpServletRequest.class);
+        String clientIp = ClientIpResolver.resolve(
+                exchange.getIn().getHeader("X-Real-IP", String.class),
+                exchange.getIn().getHeader("X-Forwarded-For", String.class),
+                servletRequest != null ? servletRequest.getRemoteAddr() : null);
         rateLimitService.checkAndConsume(clientIp);
 
         // Body was unmarshaled to ContactRequest by Camel REST DSL

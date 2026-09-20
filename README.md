@@ -22,7 +22,7 @@ PopTalk is a self-hostable chat widget backed by an LLM that answers using conte
 You write a `context.txt` file describing what the AI should know — yourself, in first person, or your business, speaking as "we" — deploy the backend, embed one `<script>` tag, and visitors can chat with it directly on your site. One backend can also serve multiple personas at once (see [Multiple Personas](#multiple-personas)) — handy for an agency, a team, or a business running several sites.
 
 **Backend:** Spring Boot + Apache Camel + Spring AI (Ollama, OpenAI, Anthropic, Mistral, or DeepSeek — see [AI Providers](#ai-providers))  
-**Widget:** Zero-dependency vanilla JS, Shadow DOM isolated, ~17 kB / ~7 kB gzipped
+**Widget:** Zero-dependency vanilla JS, Shadow DOM isolated, ~18 kB / ~7.5 kB gzipped
 
 ---
 
@@ -292,7 +292,7 @@ To produce a minified bundle for distribution:
 
 ```bash
 npm run build
-# Output: dist/poptalk.min.js (~17 kB / ~7 kB gzipped)
+# Output: dist/poptalk.min.js (~18 kB / ~7.5 kB gzipped)
 ```
 
 ---

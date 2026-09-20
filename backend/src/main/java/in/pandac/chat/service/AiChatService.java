@@ -19,6 +19,7 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -95,36 +96,8 @@ public class AiChatService {
         }
 
         try {
-            String promptText = String.format("[Visitor: %s] %s", userName, userMessage);
-
-            ChatClient.ChatClientRequestSpec request = chatClient.prompt()
-                    .system(persona.systemPrompt())
-                    .user(promptText)
-                    .advisors(advisor -> advisor
-                            .param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId)
-                            .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, maxHistoryTurns));
-
-            if (persona.model() != null || persona.temperature() != null) {
-                ChatOptions.Builder options = ChatOptions.builder();
-                if (persona.model() != null) {
-                    options.model(persona.model());
-                }
-                if (persona.temperature() != null) {
-                    options.temperature(persona.temperature());
-                }
-                // ChatClient's .options() takes a ChatOptions.Builder, not a built
-                // instance, as of Spring AI 2.0 — pass the builder itself.
-                request = request.options(options);
-            }
-
-            if (persona.mcpEnabled() && mcpToolProviders != null) {
-                ToolCallbackProvider toolProvider = mcpToolProviders.get(persona.id());
-                if (toolProvider != null) {
-                    request = request.toolCallbacks(toolProvider);
-                }
-            }
-
-            String response = request.call().content();
+            String response = buildRequest(chatClient, persona, sessionId, userName, userMessage)
+                    .call().content();
 
             log.debug("AI response for session {}: {}", sessionId, response);
             return response != null ? response.trim() : fallbackResponse(userName, persona);
@@ -133,6 +106,65 @@ public class AiChatService {
             log.error("AI chat error for session {} (provider '{}'): {}", sessionId, persona.provider(), e.getMessage());
             return fallbackResponse(userName, persona);
         }
+    }
+
+    /**
+     * Same request as {@link #chat}, but streamed as it's generated — for the
+     * SSE endpoint (see {@code ChatStreamController}) instead of the blocking
+     * Camel route. A provider failure mid-stream degrades to the same
+     * fallback text {@code chat()} returns on any other failure, delivered as
+     * a single chunk, rather than the connection just dying.
+     */
+    public Flux<String> chatStream(String sessionId, String personaId, String userName, String userMessage) {
+        Persona persona = personaService.getPersona(personaId);
+        ChatClient chatClient = chatClientsByProvider.get(persona.provider());
+        if (chatClient == null) {
+            log.error("No AI provider wired for '{}' (persona '{}'); known providers: {}",
+                    persona.provider(), persona.id(), chatClientsByProvider.keySet());
+            return Flux.just(fallbackResponse(userName, persona));
+        }
+
+        return buildRequest(chatClient, persona, sessionId, userName, userMessage)
+                .stream().content()
+                .onErrorResume(e -> {
+                    log.error("AI stream error for session {} (provider '{}'): {}",
+                            sessionId, persona.provider(), e.getMessage());
+                    return Flux.just(fallbackResponse(userName, persona));
+                });
+    }
+
+    private ChatClient.ChatClientRequestSpec buildRequest(ChatClient chatClient, Persona persona,
+                                                            String sessionId, String userName, String userMessage) {
+        String promptText = String.format("[Visitor: %s] %s", userName, userMessage);
+
+        ChatClient.ChatClientRequestSpec request = chatClient.prompt()
+                .system(persona.systemPrompt())
+                .user(promptText)
+                .advisors(advisor -> advisor
+                        .param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, maxHistoryTurns));
+
+        if (persona.model() != null || persona.temperature() != null) {
+            ChatOptions.Builder options = ChatOptions.builder();
+            if (persona.model() != null) {
+                options.model(persona.model());
+            }
+            if (persona.temperature() != null) {
+                options.temperature(persona.temperature());
+            }
+            // ChatClient's .options() takes a ChatOptions.Builder, not a built
+            // instance, as of Spring AI 2.0 — pass the builder itself.
+            request = request.options(options);
+        }
+
+        if (persona.mcpEnabled() && mcpToolProviders != null) {
+            ToolCallbackProvider toolProvider = mcpToolProviders.get(persona.id());
+            if (toolProvider != null) {
+                request = request.toolCallbacks(toolProvider);
+            }
+        }
+
+        return request;
     }
 
     public void clearMemory(String sessionId) {

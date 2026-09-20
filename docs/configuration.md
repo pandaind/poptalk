@@ -78,7 +78,8 @@
 |---|---|---|---|
 | `GET` | `/api/config` | None | Returns public branding config. Accepts `?persona=<id>`. |
 | `POST` | `/api/v1/chat` | None | Registers a visitor (name/contact/contactType), returns JWT. Accepts `?persona=<id>`. |
-| `POST` | `/api/v1/chat/message` | Bearer | Sends a message, returns the AI/manual reply |
+| `POST` | `/api/v1/chat/message` | Bearer | Sends a message, returns the AI/manual reply (blocking) |
+| `POST` | `/api/v1/chat/stream` | Bearer | Same as above, AI mode only — streams the reply as Server-Sent Events instead of waiting for the full response |
 | `GET` | `/api/v1/chat/history` | Bearer | Returns message history |
 | `GET` | `/api/v1/chat/reply` | Bearer | Polls for a new admin reply in MANUAL mode (204 if none) |
 | `POST` | `/api/v1/chat/end` | Bearer | Ends the session |
@@ -99,6 +100,20 @@
 
 // Response
 { "messageId": "...", "timestamp": "...", "response": "I've been working on a few interesting things lately..." }
+```
+
+**Streaming request / response** (`GET /api/config`'s `chatMode` tells the
+widget which of these two message endpoints to use):
+```
+// POST /api/v1/chat/stream
+{ "message": "Tell me about your projects" }
+
+// Response (text/event-stream)
+data:I've been working
+data: on a few interesting things lately...
+
+event:done
+data:<sessionId>
 ```
 
 ---
