@@ -316,6 +316,7 @@ npm run build
 
 - [Getting Started](docs/getting-started.md)
 - [Configuration Reference](docs/configuration.md)
+- [Architecture](docs/architecture.md)
 
 ---
 
