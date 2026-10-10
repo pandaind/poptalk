@@ -60,8 +60,8 @@
 
 ```html
 <script
-  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@v1.3.0/widget/dist/poptalk.min.js"
-  integrity="sha384-ARdyvpNwfracSRNc4FAjVq0VDRrwzpcJzlzwc3/FwFirAs8i7mC6Rs3Y6sbHqS2E"
+  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@v1.4.0/widget/dist/poptalk.min.js"
+  integrity="sha384-mUiYTYUIc6SOlivOF6oJG80zQZrXtWmM+ElHb6hdn2KtoDcbvdOb2W3SJkXW3az3"
   crossorigin="anonymous"
   data-api-url="https://your-backend.com"
   data-accent="#6C63FF"
@@ -70,7 +70,7 @@
 </script>
 ```
 
-> **Pinned and verified:** the snippet above uses the `v1.3.0` tag and a
+> **Pinned and verified:** the snippet above uses the `v1.4.0` tag and a
 > [subresource integrity](https://developer.mozilla.org/docs/Web/Security/Subresource_Integrity)
 > hash, so the browser refuses the file if it ever differs from the release you reviewed. Avoid
 > `@master`: it changes under you. When you upgrade, take the new tag and hash from the release

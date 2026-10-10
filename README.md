@@ -62,8 +62,8 @@ Add this before `</body>` on any site — portfolio, business site, docs, produc
 
 ```html
 <script
-  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@v1.3.0/widget/dist/poptalk.min.js"
-  integrity="sha384-ARdyvpNwfracSRNc4FAjVq0VDRrwzpcJzlzwc3/FwFirAs8i7mC6Rs3Y6sbHqS2E"
+  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@v1.4.0/widget/dist/poptalk.min.js"
+  integrity="sha384-mUiYTYUIc6SOlivOF6oJG80zQZrXtWmM+ElHb6hdn2KtoDcbvdOb2W3SJkXW3az3"
   crossorigin="anonymous"
   data-api-url="https://your-backend-url.com"
   data-accent="#6C63FF"
