@@ -34,7 +34,7 @@
 | `MCP_RAG_ENDPOINT` | `/mcp` | — | MCP Streamable HTTP endpoint path on that server |
 | `MCP_ENABLED` | `false` | — | Default for whether personas can use MCP tools; override per persona with `mcp=` |
 | `CHAT_MODE` | `AI` | — | `AI` — configured provider responds / `MANUAL` — Telegram relay |
-| `CORS_ALLOWED_ORIGIN` | `https://pandac.in` | ✅ | Your website's exact origin URL |
+| `CORS_ALLOWED_ORIGIN` | `https://pandac.in` | ✅ | Your website's exact origin URL. Accepts a comma-separated list (`https://example.com,http://localhost:1313`) and subdomain patterns (`https://*.example.com`). A bare `*` is rejected. |
 | `OWNER_WEBSITE_URL` | _(empty)_ | — | Optional — shown in the AI's fallback reply if it can't respond |
 | `HOST_PORT` | `9097` | — | Host port mapped to container's 8080 |
 
