@@ -313,3 +313,42 @@
 }
 #pt-footer a { color: var(--accent); text-decoration: none; }
 #pt-footer a:hover { text-decoration: underline; }
+
+/* ── Pre-chat form (data-collect) ─────────────────────────── */
+.pt-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  margin: 8px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--text);
+}
+.pt-form-title { margin: 0; font-weight: 600; }
+.pt-form label { display: flex; flex-direction: column; gap: 4px; color: var(--text-muted); font-size: 12px; }
+.pt-form input {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 10px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+}
+.pt-form input:focus { border-color: var(--accent); }
+.pt-form-error { margin: 0; color: var(--error-text); font-size: 12px; }
+.pt-form button {
+  font: inherit;
+  font-weight: 600;
+  padding: 9px 12px;
+  color: white;
+  background: var(--accent);
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.pt-form button:hover { background: var(--accent-dark); }

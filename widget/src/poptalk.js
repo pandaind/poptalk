@@ -21,6 +21,13 @@ import rawCSS from './styles.css?inline';
     // "google" (default) loads the Inter web font from Google Fonts; "system" makes no
     // third-party request and uses the visitor's system font.
     fonts:   script?.dataset.fonts   || 'google',
+    // How a chat session is started. "auto" (default) asks the backend for an anonymous session
+    // and falls back to the older registration endpoint if the backend predates it;
+    // "legacy" always uses the registration endpoint with a placeholder identity.
+    session: script?.dataset.session || 'auto',
+    // "email" or "phone": ask the visitor for a name and that contact before the first message
+    // (for sites that want leads, or manual replies). Empty means the visitor stays anonymous.
+    collect: ['email', 'phone'].includes(script?.dataset.collect) ? script.dataset.collect : '',
   };
 
   const t = resolveTranslations(cfg.lang);
@@ -136,28 +143,48 @@ import rawCSS from './styles.css?inline';
   }
 
   // ── Session management ────────────────────────────────────────────────────
+  // Details the visitor typed into the pre-chat form (held in memory only).
+  let visitor = null;
+
+  async function registerLegacy(name, contact, contactType) {
+    return fetch(withPersona(`${cfg.apiUrl}/api/v1/chat`), {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name, contact, contactType,
+        source:   location.hostname,
+        referrer: document.referrer || undefined,
+      }),
+    });
+  }
+
+  // The registration endpoint requires a name and a contact. For an anonymous visitor on an older
+  // backend we send a random placeholder that is not personal data.
+  function registerPlaceholder() {
+    const visitorId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    return registerLegacy('Website Visitor', `visitor-${visitorId}@widget.local`, 'email');
+  }
+
   async function ensureSession() {
     if (token && sessionId) return true;
     try {
-      // The backend gates chat behind its contact-registration endpoint (name +
-      // contact + contactType). The widget itself doesn't collect those, so we
-      // register with an anonymous placeholder — good enough to obtain a session.
-      const visitorId = (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-      const res = await fetch(withPersona(`${cfg.apiUrl}/api/v1/chat`), {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name:        'Website Visitor',
-          contact:     `visitor-${visitorId}@widget.local`,
-          contactType: 'email',
-          source:      location.hostname,
-          referrer:    document.referrer || undefined,
-        }),
-      });
-      if (!res.ok) throw new Error(`Register failed: ${res.status}`);
+      let res;
+      if (cfg.collect) {
+        if (!visitor) return false;            // the pre-chat form has not been completed yet
+        res = await registerLegacy(visitor.name, visitor.contact, cfg.collect);
+      } else if (cfg.session === 'legacy' || sessionStorage.getItem('pt_legacy') === '1') {
+        res = await registerPlaceholder();
+      } else {
+        res = await fetch(withPersona(`${cfg.apiUrl}/api/v1/session`), { method: 'POST' });
+        if (res.status === 404 || res.status === 405) {
+          // A backend from before anonymous sessions: remember, and register the old way.
+          sessionStorage.setItem('pt_legacy', '1');
+          res = await registerPlaceholder();
+        }
+      }
+      if (!res.ok) throw new Error(`Session failed: ${res.status}`);
       const data = await res.json();
       token     = data.token;
       sessionId = data.sessionId;
@@ -169,6 +196,74 @@ import rawCSS from './styles.css?inline';
       console.error('[poptalk] session error:', err);
       return false;
     }
+  }
+
+  // ── Optional pre-chat form (data-collect) ─────────────────────────────────
+  function needsDetails() {
+    return cfg.collect && !(token && sessionId) && !visitor;
+  }
+
+  function showDetailsForm() {
+    if (messages.querySelector('.pt-form')) return;
+    messages.querySelector('.pt-welcome')?.remove();
+
+    const isPhone = cfg.collect === 'phone';
+    const form = document.createElement('form');
+    form.className = 'pt-form';
+    form.noValidate = true;
+
+    const title = document.createElement('p');
+    title.className = 'pt-form-title';
+    title.textContent = t.formTitle;
+    form.appendChild(title);
+
+    const field = (labelText, name, type, autocomplete, max) => {
+      const label = document.createElement('label');
+      label.textContent = labelText;
+      const inputEl = document.createElement('input');
+      inputEl.name = name; inputEl.type = type; inputEl.autocomplete = autocomplete;
+      inputEl.maxLength = max; inputEl.required = true;
+      label.appendChild(inputEl);
+      form.appendChild(label);
+      return inputEl;
+    };
+    const nameInput    = field(t.formName, 'name', 'text', 'name', 100);
+    const contactInput = field(isPhone ? t.formPhone : t.formEmail, 'contact',
+                               isPhone ? 'tel' : 'email', isPhone ? 'tel' : 'email', 255);
+
+    const error = document.createElement('p');
+    error.className = 'pt-form-error';
+    error.setAttribute('role', 'alert');
+    error.hidden = true;
+    form.appendChild(error);
+
+    const submit = document.createElement('button');
+    submit.type = 'submit';
+    submit.textContent = t.formStart;
+    form.appendChild(submit);
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = nameInput.value.trim();
+      const contact = contactInput.value.trim();
+      const contactOk = isPhone
+        ? /^[+0-9 ()\-]{6,30}$/.test(contact)
+        : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
+      const problem = name.length < 2 ? t.formInvalidName
+        : (!contactOk ? (isPhone ? t.formInvalidPhone : t.formInvalidEmail) : '');
+      if (problem) {
+        error.textContent = problem;
+        error.hidden = false;
+        return;
+      }
+      visitor = { name, contact };
+      form.remove();
+      sendMessage();           // sends the message the visitor had already typed
+    });
+
+    messages.appendChild(form);
+    nameInput.focus();
+    scrollToBottom();
   }
 
   async function loadHistory() {
@@ -225,6 +320,11 @@ import rawCSS from './styles.css?inline';
   async function sendMessage() {
     const text = input.value.trim();
     if (!text || isWaiting) return;
+
+    if (needsDetails()) {
+      showDetailsForm();       // the typed message stays in the box until the form is done
+      return;
+    }
 
     // Remove welcome message on first send
     messages.querySelector('.pt-welcome')?.remove();
@@ -412,10 +512,9 @@ import rawCSS from './styles.css?inline';
   toggleBtn.addEventListener('click', () => {
     if (!isOpen) {
       openPopup();
-      // Load session + history on first open
-      if (!token) {
-        ensureSession().then(() => loadHistory());
-      } else {
+      // A session starts with the first message, so merely opening the chat creates nothing.
+      // A visitor returning within the session sees their history.
+      if (token) {
         loadHistory();
       }
     } else {
@@ -449,7 +548,7 @@ import rawCSS from './styles.css?inline';
   // Lets the host page follow its own light/dark toggle or accent without reloading the
   // widget (which would lose the open conversation).
   window.PopTalk = Object.freeze({
-    version: '1.1.0',
+    version: '1.2.0',
     setTheme(theme) {
       if (theme === 'dark' || theme === 'light' || theme === 'auto') applyTheme(theme);
     },

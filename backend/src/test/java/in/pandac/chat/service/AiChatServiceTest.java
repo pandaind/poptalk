@@ -57,6 +57,20 @@ class AiChatServiceTest {
     }
 
     @Test
+    void anAnonymousVisitorIsGreetedWithoutTheirPlaceholderName() {
+        PersonaService personaService = personaServiceFor(persona("default", "openai", null, null, false));
+        AiChatService service = new AiChatService(personaService,
+                providerOf(null), providerOf(null), providerOf(null), providerOf(null), providerOf(null),
+                providerOf(null));
+
+        String anonymous = service.chat("session-1", "default", "Anonymous", "Hi!");
+        String named = service.chat("session-1", "default", "Ada", "Hi!");
+
+        assertThat(anonymous).startsWith("Hi there!").doesNotContain("Anonymous");
+        assertThat(named).startsWith("Hi Ada!");
+    }
+
+    @Test
     void fallsBackWithoutPropagatingWhenTheModelCallThrows() {
         OllamaChatModel ollama = ollamaReturning("unused");
         when(ollama.call(any(Prompt.class))).thenThrow(new RuntimeException("connection refused"));

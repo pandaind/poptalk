@@ -85,6 +85,8 @@ A floating chat button appears in the bottom-right of your site. Done.
 | `data-accent` | `#6C63FF` | Primary accent color (any CSS color) |
 | `data-persona` | *(none)* | Which persona to chat with, for multi-persona backends. Omit to use the backend's default persona. |
 | `data-lang` | *(browser language)* | UI language: `en`, `es`, `fr`, `de`, `pt`, `hi`, `ja`, `zh`. Falls back to English for unsupported codes. |
+| `data-session` | `auto` | `auto` starts an anonymous session (no name or email) and falls back to the older registration for backends that predate it; `legacy` always registers with a placeholder identity |
+| `data-collect` | *(none)* | `email` or `phone`: ask for a name and that contact before the first message (for lead capture, or manual replies). Left unset, visitors stay anonymous |
 
 The widget auto-fetches your name, title, and avatar initial from the backend — no hardcoding needed.
 
