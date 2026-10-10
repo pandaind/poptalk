@@ -14,6 +14,23 @@
   --ai-bubble: #242432;
   --radius: 16px;
   --shadow: 0 24px 64px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3);
+  --error-text: #fca5a5;
+  --online: #4ade80;
+}
+
+/* Light palette. Applied with data-theme="light" on the host element, which the script
+   sets from data-theme ("dark" | "light" | "auto") or window.PopTalk.setTheme(). */
+:host([data-theme="light"]) {
+  --bg: #ffffff;
+  --surface: #f4f4f8;
+  --surface2: #ebebf2;
+  --border: rgba(20,20,40,0.12);
+  --text: #16161f;
+  --text-muted: #5f6178;
+  --ai-bubble: #ebebf2;
+  --shadow: 0 24px 64px rgba(20,20,40,0.18), 0 4px 16px rgba(20,20,40,0.10);
+  --error-text: #b91c1c;
+  --online: #16a34a;
 }
 
 /* ── Toggle button ────────────────────────────────────────── */
@@ -132,7 +149,7 @@
 }
 .pt-status {
   font-size: 11px;
-  color: #4ade80;
+  color: var(--online);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -142,7 +159,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #4ade80;
+  background: var(--online);
   display: inline-block;
   animation: pt-blink 2s infinite;
 }
@@ -235,7 +252,7 @@
 .pt-msg-error {
   background: rgba(239,68,68,0.12) !important;
   border-color: rgba(239,68,68,0.3) !important;
-  color: #fca5a5 !important;
+  color: var(--error-text) !important;
 }
 
 /* ── Input area ──────────────────────────────────────────── */

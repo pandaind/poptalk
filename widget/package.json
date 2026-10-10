@@ -1,6 +1,6 @@
 {
   "name": "poptalk-widget",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Embeddable AI chat widget for any website",
   "main": "dist/poptalk.min.js",
   "scripts": {

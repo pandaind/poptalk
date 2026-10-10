@@ -45,7 +45,7 @@
 | Attribute | Default | Description |
 |---|---|---|
 | `data-api-url` | `http://localhost:8080` | Your backend's URL (no trailing slash) |
-| `data-theme` | `dark` | `dark` or `light` |
+| `data-theme` | `dark` | `dark`, `light`, or `auto` (follow the visitor's OS setting) |
 | `data-accent` | `#6C63FF` | Primary accent color (hex, rgb, hsl — any CSS color) |
 | `data-persona` | *(none)* | Persona id to chat with, for multi-persona backends (see "Multiple Personas" in the README). Omit to use the backend's default persona. |
 | `data-lang` | *(browser language)* | UI language: `en`, `es`, `fr`, `de`, `pt`, `hi`, `ja`, `zh`. Unsupported codes fall back to English. |
@@ -195,3 +195,17 @@ authenticated with its own key. A connection attempt happens once at
 startup per persona; if the server is unreachable, a warning is logged and
 that persona's tools stay unavailable until the backend restarts with the
 server reachable — chat itself keeps working either way.
+
+## JavaScript API
+
+The widget exposes a small API as `window.PopTalk`, so the host page can follow its own
+light/dark toggle or accent colour without reloading the widget (which would lose the open
+conversation):
+
+```js
+PopTalk.setTheme('light');      // 'dark' | 'light' | 'auto'
+PopTalk.setAccent('#0f766e');   // any CSS colour
+PopTalk.version;                // widget version
+```
+
+Unknown values are ignored.

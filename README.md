@@ -78,7 +78,7 @@ A floating chat button appears in the bottom-right of your site. Done.
 | Attribute | Default | Description |
 |---|---|---|
 | `data-api-url` | `http://localhost:8080` | URL of your deployed backend |
-| `data-theme` | `dark` | `dark` or `light` |
+| `data-theme` | `dark` | `dark`, `light`, or `auto` (follow the visitor's OS setting) |
 | `data-accent` | `#6C63FF` | Primary accent color (any CSS color) |
 | `data-persona` | *(none)* | Which persona to chat with, for multi-persona backends. Omit to use the backend's default persona. |
 | `data-lang` | *(browser language)* | UI language: `en`, `es`, `fr`, `de`, `pt`, `hi`, `ja`, `zh`. Falls back to English for unsupported codes. |

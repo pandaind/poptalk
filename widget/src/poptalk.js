@@ -11,6 +11,7 @@ import rawCSS from './styles.css?inline';
 
   const cfg = {
     apiUrl:  (script?.dataset.apiUrl || 'http://localhost:8080').replace(/\/$/, ''),
+    // "dark" (default), "light", or "auto" (follow the visitor's OS setting).
     theme:   script?.dataset.theme   || 'dark',
     accent:  script?.dataset.accent  || '#6C63FF',
     // Which backend persona to talk to (multi-persona deployments only).
@@ -39,6 +40,20 @@ import rawCSS from './styles.css?inline';
   host.id = 'poptalk-host';
   const shadow = host.attachShadow({ mode: 'closed' });
   document.body.appendChild(host);
+
+  // ── Colour theme ──────────────────────────────────────────────────────────
+  // The palette is selected by data-theme on the host element (see styles.css).
+  const darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  let themePref = cfg.theme;
+  function applyTheme(pref) {
+    themePref = pref;
+    const light = pref === 'light' || (pref === 'auto' && darkQuery && !darkQuery.matches);
+    host.setAttribute('data-theme', light ? 'light' : 'dark');
+  }
+  if (darkQuery && darkQuery.addEventListener) {
+    darkQuery.addEventListener('change', () => { if (themePref === 'auto') applyTheme('auto'); });
+  }
+  applyTheme(cfg.theme);
 
   // ── Inject styles ─────────────────────────────────────────────────────────
   const sheet = new CSSStyleSheet();
@@ -427,4 +442,16 @@ import rawCSS from './styles.css?inline';
   // ── Init ──────────────────────────────────────────────────────────────────
   loadConfig();
 
+  // ── Public API ────────────────────────────────────────────────────────────
+  // Lets the host page follow its own light/dark toggle or accent without reloading the
+  // widget (which would lose the open conversation).
+  window.PopTalk = Object.freeze({
+    version: '1.1.0',
+    setTheme(theme) {
+      if (theme === 'dark' || theme === 'light' || theme === 'auto') applyTheme(theme);
+    },
+    setAccent(color) {
+      if (typeof color === 'string' && color) host.style.setProperty('--pt-accent', color);
+    },
+  });
 })();
