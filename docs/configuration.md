@@ -45,6 +45,7 @@
 | Attribute | Default | Description |
 |---|---|---|
 | `data-api-url` | `http://localhost:8080` | Your backend's URL (no trailing slash) |
+| `data-fonts` | `google` | `google` loads the Inter web font from Google Fonts; `system` makes no third-party request |
 | `data-theme` | `dark` | `dark`, `light`, or `auto` (follow the visitor's OS setting) |
 | `data-accent` | `#6C63FF` | Primary accent color (hex, rgb, hsl — any CSS color) |
 | `data-persona` | *(none)* | Persona id to chat with, for multi-persona backends (see "Multiple Personas" in the README). Omit to use the backend's default persona. |
@@ -205,6 +206,8 @@ conversation):
 ```js
 PopTalk.setTheme('light');      // 'dark' | 'light' | 'auto'
 PopTalk.setAccent('#0f766e');   // any CSS colour
+PopTalk.open();                 // open or close the chat popup
+PopTalk.close();
 PopTalk.version;                // widget version
 ```
 

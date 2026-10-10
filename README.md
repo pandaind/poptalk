@@ -78,6 +78,7 @@ A floating chat button appears in the bottom-right of your site. Done.
 | Attribute | Default | Description |
 |---|---|---|
 | `data-api-url` | `http://localhost:8080` | URL of your deployed backend |
+| `data-fonts` | `google` | `system` skips the Google Fonts request and uses the visitor's system font |
 | `data-theme` | `dark` | `dark`, `light`, or `auto` (follow the visitor's OS setting) |
 | `data-accent` | `#6C63FF` | Primary accent color (any CSS color) |
 | `data-persona` | *(none)* | Which persona to chat with, for multi-persona backends. Omit to use the backend's default persona. |

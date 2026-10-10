@@ -18,6 +18,9 @@ import rawCSS from './styles.css?inline';
     // Left blank, the backend uses its configured default persona.
     persona: script?.dataset.persona || '',
     lang:    script?.dataset.lang    || '',
+    // "google" (default) loads the Inter web font from Google Fonts; "system" makes no
+    // third-party request and uses the visitor's system font.
+    fonts:   script?.dataset.fonts   || 'google',
   };
 
   const t = resolveTranslations(cfg.lang);
@@ -61,7 +64,7 @@ import rawCSS from './styles.css?inline';
   shadow.adoptedStyleSheets = [sheet];
 
   // ── Inject Google Font ────────────────────────────────────────────────────
-  if (!document.querySelector('#pt-inter-font')) {
+  if (cfg.fonts !== 'system' && !document.querySelector('#pt-inter-font')) {
     const link = document.createElement('link');
     link.id   = 'pt-inter-font';
     link.rel  = 'stylesheet';
@@ -453,5 +456,7 @@ import rawCSS from './styles.css?inline';
     setAccent(color) {
       if (typeof color === 'string' && color) host.style.setProperty('--pt-accent', color);
     },
+    open()  { if (!isOpen) toggleBtn.click(); },
+    close() { if (isOpen) toggleBtn.click(); },
   });
 })();
