@@ -86,6 +86,7 @@ A floating chat button appears in the bottom-right of your site. Done.
 | `data-persona` | *(none)* | Which persona to chat with, for multi-persona backends. Omit to use the backend's default persona. |
 | `data-lang` | *(browser language)* | UI language: `en`, `es`, `fr`, `de`, `pt`, `hi`, `ja`, `zh`. Falls back to English for unsupported codes. |
 | `data-welcome` | persona's `welcomeMessage`, else a generic greeting | First line shown in the chat window. Overrides the persona's value. Plain text |
+| `data-user-name`, `data-user-email` / `data-user-phone` | none | For sites with a login: the signed-in user's details, so the form is skipped. Also `PopTalk.identify({ name, email })` from script, and `PopTalk.identify(null)` on sign-out |
 | `data-collect` | `email` | Which contact the visitor is asked for before their first message: `email` or `phone`. Visitors must give a name and a valid contact to chat; there is no anonymous mode |
 
 The widget auto-fetches your name, title, and avatar initial from the backend — no hardcoding needed.

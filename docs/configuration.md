@@ -51,6 +51,7 @@
 | `data-persona` | *(none)* | Persona id to chat with, for multi-persona backends (see "Multiple Personas" in the README). Omit to use the backend's default persona. |
 | `data-lang` | *(browser language)* | UI language: `en`, `es`, `fr`, `de`, `pt`, `hi`, `ja`, `zh`. Unsupported codes fall back to English. |
 | `data-welcome` | persona's `welcomeMessage`, else a generic greeting | First line shown in the chat window. Overrides the persona's value. Plain text |
+| `data-user-name`, `data-user-email` / `data-user-phone` | none | For sites with a login: the signed-in user's details, so the form is skipped (see [Signed-in users](#signed-in-users-apps-with-a-login)). Also `PopTalk.identify(...)` |
 | `data-collect` | `email` | Which contact the visitor is asked for before their first message: `email` or `phone`. Visitors must give a name and a valid contact to chat; there is no anonymous mode |
 
 ---
@@ -100,6 +101,25 @@ would send a confirmation message, which PopTalk does not do today.
 
 A session is created when the first message is sent, so opening the chat creates nothing. The
 owner is notified (Telegram) with the visitor's name and contact when they start.
+
+### Signed-in users (apps with a login)
+
+When the chat is on a site where the visitor is already signed in, the host page can hand the
+widget who they are, and the form is skipped:
+
+```html
+<script src=".../poptalk.min.js" data-api-url="https://chat.example.com"
+        data-user-name="Grace Hopper" data-user-email="grace@example.com"></script>
+```
+
+Use `data-user-phone` instead of `data-user-email` for phone contacts. A single-page app can
+call `PopTalk.identify({ name, email })` (or `{ name, phone }`) after sign-in and
+`PopTalk.identify(null)` on sign-out; a different person signing in starts a fresh
+conversation. If the details are missing or malformed the widget simply shows the form.
+
+The backend applies the same validation as above. These details come from the page, so treat
+them as *claimed* by the visitor's browser, not as authentication; PopTalk does not verify them
+against your login system.
 
 > **Upgrading:** widget versions before 1.2 registered with a made-up `@widget.local` address.
 > The backend now refuses that, so an old widget talking to an upgraded backend will not be able
@@ -240,6 +260,8 @@ PopTalk.setTheme('light');      // 'dark' | 'light' | 'auto'
 PopTalk.setAccent('#0f766e');   // any CSS colour
 PopTalk.open();                 // open or close the chat popup
 PopTalk.close();
+PopTalk.identify({ name: 'Grace Hopper', email: 'grace@example.com' }); // signed in
+PopTalk.identify(null);         // signed out
 PopTalk.version;                // widget version
 ```
 

@@ -146,7 +146,50 @@ import rawCSS from './styles.css?inline';
 
   // ── Session management ────────────────────────────────────────────────────
   // Details the visitor typed into the pre-chat form (held in memory only).
+  // `type` is 'email' or 'phone'.
   let visitor = null;
+
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const PHONE_RE = /^[+0-9 ()\-]{6,30}$/;
+
+  // Turns { name, email | phone } from the host page into { name, contact, type }, or null when
+  // anything is missing or malformed (the backend applies its own, stricter checks as well).
+  function parseIdentity(u) {
+    if (!u || typeof u !== 'object') return null;
+    const name = String(u.name || '').trim();
+    const email = String(u.email || '').trim();
+    const phone = String(u.phone || '').trim();
+    if (name.length < 2 || name.length > 100) return null;
+    if (email && EMAIL_RE.test(email) && email.length <= 254) return { name, contact: email, type: 'email' };
+    if (!email && phone && PHONE_RE.test(phone)) return { name, contact: phone, type: 'phone' };
+    return null;
+  }
+
+  // Forget the current conversation (a different person signed in, or the person signed out).
+  function resetSession() {
+    token = null;
+    sessionId = null;
+    sessionStorage.removeItem('pt_token');
+    sessionStorage.removeItem('pt_session_id');
+    sessionStorage.removeItem('pt_contact');
+    messages.replaceChildren(welcomeEl);
+  }
+
+  function setIdentity(next) {
+    if (token && sessionId && (!next || sessionStorage.getItem('pt_contact') !== next.contact)) {
+      resetSession();
+    }
+    messages.querySelector('.pt-form')?.remove();
+    visitor = next;
+  }
+
+  // A signed-in host page can pass the user's details so the form is skipped:
+  // data-user-name plus data-user-email (or data-user-phone) on the script tag.
+  setIdentity(parseIdentity({
+    name:  script?.dataset.userName,
+    email: script?.dataset.userEmail,
+    phone: script?.dataset.userPhone,
+  }));
 
   async function registerVisitor(name, contact, contactType) {
     return fetch(withPersona(`${cfg.apiUrl}/api/v1/chat`), {
@@ -164,12 +207,12 @@ import rawCSS from './styles.css?inline';
     if (token && sessionId) return true;
     if (!visitor) return false;                // the details form has not been completed yet
     try {
-      const res = await registerVisitor(visitor.name, visitor.contact, cfg.collect);
+      const res = await registerVisitor(visitor.name, visitor.contact, visitor.type);
       if (res.status === 400) {
         // The backend rejected the details (it applies stricter rules than the form). Say so and
         // ask again rather than showing a generic connection error.
+        appendError(visitor.type === 'phone' ? t.formInvalidPhone : t.formInvalidEmail);
         visitor = null;
-        appendError(cfg.collect === 'phone' ? t.formInvalidPhone : t.formInvalidEmail);
         showDetailsForm();
         return false;
       }
@@ -179,6 +222,7 @@ import rawCSS from './styles.css?inline';
       sessionId = data.sessionId;
       sessionStorage.setItem('pt_token',      token);
       sessionStorage.setItem('pt_session_id', sessionId);
+      sessionStorage.setItem('pt_contact',    visitor.contact);
       return true;
     } catch (err) {
       appendError(t.errorConnect);
@@ -235,9 +279,7 @@ import rawCSS from './styles.css?inline';
       e.preventDefault();
       const name = nameInput.value.trim();
       const contact = contactInput.value.trim();
-      const contactOk = isPhone
-        ? /^[+0-9 ()\-]{6,30}$/.test(contact)
-        : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
+      const contactOk = (isPhone ? PHONE_RE : EMAIL_RE).test(contact);
       const problem = name.length < 2 ? t.formInvalidName
         : (!contactOk ? (isPhone ? t.formInvalidPhone : t.formInvalidEmail) : '');
       if (problem) {
@@ -245,7 +287,7 @@ import rawCSS from './styles.css?inline';
         error.hidden = false;
         return;
       }
-      visitor = { name, contact };
+      visitor = { name, contact, type: isPhone ? 'phone' : 'email' };
       form.remove();
       sendMessage();           // sends the message the visitor had already typed
     });
@@ -537,12 +579,21 @@ import rawCSS from './styles.css?inline';
   // Lets the host page follow its own light/dark toggle or accent without reloading the
   // widget (which would lose the open conversation).
   window.PopTalk = Object.freeze({
-    version: '1.3.0',
+    version: '1.4.0',
     setTheme(theme) {
       if (theme === 'dark' || theme === 'light' || theme === 'auto') applyTheme(theme);
     },
     setAccent(color) {
       if (typeof color === 'string' && color) host.style.setProperty('--pt-accent', color);
+    },
+    // identify({ name, email }) or identify({ name, phone }) tells the widget who is signed in,
+    // so it skips the details form; identify(null) on sign-out forgets the conversation.
+    // Returns false when the details are missing or malformed (the form is used instead).
+    identify(user) {
+      if (user === null || user === undefined) { setIdentity(null); return true; }
+      const next = parseIdentity(user);
+      setIdentity(next);
+      return next !== null;
     },
     open()  { if (!isOpen) toggleBtn.click(); },
     close() { if (isOpen) toggleBtn.click(); },
