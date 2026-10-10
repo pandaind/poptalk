@@ -1,5 +1,8 @@
 package in.pandac.chat.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import in.pandac.chat.util.ContactValidator;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -24,6 +27,19 @@ public class ContactRequest {
     private String referrer;
 
     public ContactRequest() {}
+
+    /**
+     * The contact must really be an email address or phone number, matching {@code contactType}.
+     * Skipped when either field is blank so the clearer "is required" message is the one shown.
+     */
+    @JsonIgnore
+    @AssertTrue(message = "Contact must be a valid email address or phone number matching contactType")
+    public boolean isContactValid() {
+        if (contact == null || contact.isBlank() || contactType == null || contactType.isBlank()) {
+            return true;
+        }
+        return ContactValidator.isValid(contactType, contact);
+    }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

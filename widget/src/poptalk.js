@@ -21,13 +21,9 @@ import rawCSS from './styles.css?inline';
     // "google" (default) loads the Inter web font from Google Fonts; "system" makes no
     // third-party request and uses the visitor's system font.
     fonts:   script?.dataset.fonts   || 'google',
-    // How a chat session is started. "auto" (default) asks the backend for an anonymous session
-    // and falls back to the older registration endpoint if the backend predates it;
-    // "legacy" always uses the registration endpoint with a placeholder identity.
-    session: script?.dataset.session || 'auto',
-    // "email" or "phone": ask the visitor for a name and that contact before the first message
-    // (for sites that want leads, or manual replies). Empty means the visitor stays anonymous.
-    collect: ['email', 'phone'].includes(script?.dataset.collect) ? script.dataset.collect : '',
+    // Visitors give a name and a contact before their first message. "email" (default) or
+    // "phone" chooses which contact is asked for; the backend validates it.
+    collect: script?.dataset.collect === 'phone' ? 'phone' : 'email',
   };
 
   const t = resolveTranslations(cfg.lang);
@@ -146,7 +142,7 @@ import rawCSS from './styles.css?inline';
   // Details the visitor typed into the pre-chat form (held in memory only).
   let visitor = null;
 
-  async function registerLegacy(name, contact, contactType) {
+  async function registerVisitor(name, contact, contactType) {
     return fetch(withPersona(`${cfg.apiUrl}/api/v1/chat`), {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -158,31 +154,18 @@ import rawCSS from './styles.css?inline';
     });
   }
 
-  // The registration endpoint requires a name and a contact. For an anonymous visitor on an older
-  // backend we send a random placeholder that is not personal data.
-  function registerPlaceholder() {
-    const visitorId = (typeof crypto !== 'undefined' && crypto.randomUUID)
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    return registerLegacy('Website Visitor', `visitor-${visitorId}@widget.local`, 'email');
-  }
-
   async function ensureSession() {
     if (token && sessionId) return true;
+    if (!visitor) return false;                // the details form has not been completed yet
     try {
-      let res;
-      if (cfg.collect) {
-        if (!visitor) return false;            // the pre-chat form has not been completed yet
-        res = await registerLegacy(visitor.name, visitor.contact, cfg.collect);
-      } else if (cfg.session === 'legacy' || sessionStorage.getItem('pt_legacy') === '1') {
-        res = await registerPlaceholder();
-      } else {
-        res = await fetch(withPersona(`${cfg.apiUrl}/api/v1/session`), { method: 'POST' });
-        if (res.status === 404 || res.status === 405) {
-          // A backend from before anonymous sessions: remember, and register the old way.
-          sessionStorage.setItem('pt_legacy', '1');
-          res = await registerPlaceholder();
-        }
+      const res = await registerVisitor(visitor.name, visitor.contact, cfg.collect);
+      if (res.status === 400) {
+        // The backend rejected the details (it applies stricter rules than the form). Say so and
+        // ask again rather than showing a generic connection error.
+        visitor = null;
+        appendError(cfg.collect === 'phone' ? t.formInvalidPhone : t.formInvalidEmail);
+        showDetailsForm();
+        return false;
       }
       if (!res.ok) throw new Error(`Session failed: ${res.status}`);
       const data = await res.json();
@@ -198,9 +181,9 @@ import rawCSS from './styles.css?inline';
     }
   }
 
-  // ── Optional pre-chat form (data-collect) ─────────────────────────────────
+  // ── Details form: shown before the first message ───────────────────────────
   function needsDetails() {
-    return cfg.collect && !(token && sessionId) && !visitor;
+    return !(token && sessionId) && !visitor;
   }
 
   function showDetailsForm() {
@@ -326,6 +309,16 @@ import rawCSS from './styles.css?inline';
       return;
     }
 
+    // Start the session before touching the conversation, so that if the details are rejected the
+    // visitor's message is still in the box.
+    isWaiting = true;
+    sendBtn.disabled = true;
+    if (!(await ensureSession())) {
+      isWaiting = false;
+      sendBtn.disabled = input.value.trim().length === 0;
+      return;
+    }
+
     // Remove welcome message on first send
     messages.querySelector('.pt-welcome')?.remove();
 
@@ -333,17 +326,7 @@ import rawCSS from './styles.css?inline';
     input.value = '';
     autoResize();
     scrollToBottom();
-
-    isWaiting = true;
-    sendBtn.disabled = true;
     showTyping();
-
-    if (!(await ensureSession())) {
-      removeTyping();
-      isWaiting = false;
-      sendBtn.disabled = false;
-      return;
-    }
 
     if (chatMode === 'AI') {
       await sendMessageStreaming(text);

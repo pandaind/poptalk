@@ -50,8 +50,7 @@
 | `data-accent` | `#6C63FF` | Primary accent color (hex, rgb, hsl — any CSS color) |
 | `data-persona` | *(none)* | Persona id to chat with, for multi-persona backends (see "Multiple Personas" in the README). Omit to use the backend's default persona. |
 | `data-lang` | *(browser language)* | UI language: `en`, `es`, `fr`, `de`, `pt`, `hi`, `ja`, `zh`. Unsupported codes fall back to English. |
-| `data-session` | `auto` | `auto` starts an anonymous session (no name or email) and falls back to the older registration for backends that predate it; `legacy` always registers with a placeholder identity |
-| `data-collect` | *(none)* | `email` or `phone`: ask for a name and that contact before the first message (for lead capture, or manual replies). Left unset, visitors stay anonymous |
+| `data-collect` | `email` | Which contact the visitor is asked for before their first message: `email` or `phone`. Visitors must give a name and a valid contact to chat; there is no anonymous mode |
 
 ---
 
@@ -59,8 +58,8 @@
 
 ```html
 <script
-  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@v1.1.0/widget/dist/poptalk.min.js"
-  integrity="sha384-so1XZhQ2oUFVggJKW7w+RzKzvqZJwVjy0tcc56LZe7BpcPRKiVo6GdxbN8vtJSIy"
+  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@v1.2.0/widget/dist/poptalk.min.js"
+  integrity="sha384-fEWfaLJdMBYTw03xhQVUnNTu2L/1P8C5FYW8SMw0QO+YNgTiJZd0PiOy9t8SNdlP"
   crossorigin="anonymous"
   data-api-url="https://your-backend.com"
   data-accent="#6C63FF"
@@ -69,7 +68,7 @@
 </script>
 ```
 
-> **Pinned and verified:** the snippet above uses the `v1.1.0` tag and a
+> **Pinned and verified:** the snippet above uses the `v1.2.0` tag and a
 > [subresource integrity](https://developer.mozilla.org/docs/Web/Security/Subresource_Integrity)
 > hash, so the browser refuses the file if it ever differs from the release you reviewed. Avoid
 > `@master`: it changes under you. When you upgrade, take the new tag and hash from the release
@@ -80,53 +79,42 @@
 
 ---
 
-## Visitors: anonymous or identified
+## Visitors are validated
 
-By default a visitor is **anonymous**: the widget asks for a session and nothing else, so people
-can ask a question without handing over an email first. That is the right default for a docs,
-marketing or pre-sales assistant answered by AI.
+Only a **validated visitor** can chat. Before the first message the widget shows a short form
+asking for a name and a contact (`data-collect="email"` by default, or `"phone"`). The visitor's
+typed message stays in the box and is sent once the form is done.
 
-If you want to know who is writing (lead capture, or you reply yourself in `MANUAL` mode), set
-`data-collect="email"` (or `"phone"`). The widget then shows a short name-and-contact form when
-the visitor sends their first message, keeps what they typed, and sends it once the form is done.
-The details are stored with the session and included in the Telegram notification.
+The backend enforces this itself, so it does not depend on the widget:
 
-A session is created only when the first message is sent, so merely opening the chat creates
-nothing. The widget's `window.PopTalk` API is unchanged.
+- **Name:** 2 to 100 characters.
+- **Email:** must be a real address: `local@domain.tld`, no spaces, a top-level domain of letters
+  and at most 254 characters. Reserved or local-only names (`.local`, `.localhost`, `.invalid`,
+  `.test`, `.example`, `.internal`, `.lan`, `.home`) are refused.
+- **Phone:** 7 to 15 digits, optional leading `+`; spaces, dashes, dots and brackets are ignored.
+- The contact must match `contactType`. Otherwise `POST /api/v1/chat` answers `400`.
 
-| | Anonymous (default) | `data-collect` |
-|---|---|---|
-| Visitor is asked | nothing | name + email or phone |
-| Endpoint | `POST /api/v1/session` | `POST /api/v1/chat` |
-| Telegram "new visitor" ping | no | yes |
-| AI greets them as | "there" | their name |
+This is a *format* check. It does not prove the visitor owns that address or number; for that you
+would send a confirmation message, which PopTalk does not do today.
 
-An older backend without `/api/v1/session` keeps working: the widget notices the 404 and uses
-the registration endpoint with a random placeholder, as before.
+A session is created when the first message is sent, so opening the chat creates nothing. The
+owner is notified (Telegram) with the visitor's name and contact when they start.
+
+> **Upgrading:** widget versions before 1.2 registered with a made-up `@widget.local` address.
+> The backend now refuses that, so an old widget talking to an upgraded backend will not be able
+> to start a chat. Update the widget (or the copy of it your site bundles).
 
 ## Backend API Endpoints
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | `GET` | `/api/config` | None | Returns public branding config. Accepts `?persona=<id>`. |
-| `POST` | `/api/v1/session` | None | Starts an **anonymous** session: no body, no visitor details. Returns the same `{token, sessionId, message}`. Accepts `?persona=<id>`. |
-| `POST` | `/api/v1/chat` | None | Registers a visitor (name/contact/contactType), returns JWT. Accepts `?persona=<id>`. Use when you want the visitor's details. |
+| `POST` | `/api/v1/chat` | None | Registers a validated visitor (name, a valid email or phone, `contactType`), returns JWT. Accepts `?persona=<id>`. |
 | `POST` | `/api/v1/chat/message` | Bearer | Sends a message, returns the AI/manual reply (blocking) |
 | `POST` | `/api/v1/chat/stream` | Bearer | Same as above, AI mode only — streams the reply as Server-Sent Events instead of waiting for the full response |
 | `GET` | `/api/v1/chat/history` | Bearer | Returns message history |
 | `GET` | `/api/v1/chat/reply` | Bearer | Polls for a new admin reply in MANUAL mode (204 if none) |
 | `POST` | `/api/v1/chat/end` | Bearer | Ends the session |
-
-**Anonymous session request / response:**
-```json
-// POST /api/v1/session   (no body)
-
-// Response
-{ "token": "eyJ...", "sessionId": "9f1c...", "message": "Welcome! How can I help you today?" }
-```
-The token's subject is the session id and it carries no contact. The session is stored as
-`Anonymous`, and **no "new visitor" Telegram notification is sent** (there is nothing to report
-yet; in `MANUAL` mode you hear about the visitor when their first message arrives).
 
 **Register request / response:**
 ```json

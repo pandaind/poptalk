@@ -1,6 +1,5 @@
 package in.pandac.chat.service;
 
-import in.pandac.chat.processor.AnonymousSessionProcessor;
 import in.pandac.chat.config.McpRagConfig.PersonaMcpToolProviders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -177,8 +176,6 @@ public class AiChatService {
         String retryHint = persona.websiteUrl() != null
                 ? "Please check " + persona.websiteUrl() + " or try again in a moment."
                 : "Please try again in a moment.";
-        // An anonymous visitor has no name worth greeting by.
-        String greeting = AnonymousSessionProcessor.ANONYMOUS_NAME.equals(userName) ? "Hi there" : "Hi " + userName;
-        return String.format("%s! I'm having a little trouble connecting right now. %s", greeting, retryHint);
+        return String.format("Hi %s! I'm having a little trouble connecting right now. %s", userName, retryHint);
     }
 }

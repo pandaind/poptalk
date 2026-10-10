@@ -62,8 +62,8 @@ Add this before `</body>` on any site — portfolio, business site, docs, produc
 
 ```html
 <script
-  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@v1.1.0/widget/dist/poptalk.min.js"
-  integrity="sha384-so1XZhQ2oUFVggJKW7w+RzKzvqZJwVjy0tcc56LZe7BpcPRKiVo6GdxbN8vtJSIy"
+  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@v1.2.0/widget/dist/poptalk.min.js"
+  integrity="sha384-fEWfaLJdMBYTw03xhQVUnNTu2L/1P8C5FYW8SMw0QO+YNgTiJZd0PiOy9t8SNdlP"
   crossorigin="anonymous"
   data-api-url="https://your-backend-url.com"
   data-accent="#6C63FF"
@@ -85,8 +85,7 @@ A floating chat button appears in the bottom-right of your site. Done.
 | `data-accent` | `#6C63FF` | Primary accent color (any CSS color) |
 | `data-persona` | *(none)* | Which persona to chat with, for multi-persona backends. Omit to use the backend's default persona. |
 | `data-lang` | *(browser language)* | UI language: `en`, `es`, `fr`, `de`, `pt`, `hi`, `ja`, `zh`. Falls back to English for unsupported codes. |
-| `data-session` | `auto` | `auto` starts an anonymous session (no name or email) and falls back to the older registration for backends that predate it; `legacy` always registers with a placeholder identity |
-| `data-collect` | *(none)* | `email` or `phone`: ask for a name and that contact before the first message (for lead capture, or manual replies). Left unset, visitors stay anonymous |
+| `data-collect` | `email` | Which contact the visitor is asked for before their first message: `email` or `phone`. Visitors must give a name and a valid contact to chat; there is no anonymous mode |
 
 The widget auto-fetches your name, title, and avatar initial from the backend — no hardcoding needed.
 
