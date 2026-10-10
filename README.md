@@ -62,7 +62,9 @@ Add this before `</body>` on any site — portfolio, business site, docs, produc
 
 ```html
 <script
-  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@master/widget/dist/poptalk.min.js"
+  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@v1.1.0/widget/dist/poptalk.min.js"
+  integrity="sha384-so1XZhQ2oUFVggJKW7w+RzKzvqZJwVjy0tcc56LZe7BpcPRKiVo6GdxbN8vtJSIy"
+  crossorigin="anonymous"
   data-api-url="https://your-backend-url.com"
   data-accent="#6C63FF"
   defer>

@@ -57,7 +57,9 @@
 
 ```html
 <script
-  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@master/widget/dist/poptalk.min.js"
+  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@v1.1.0/widget/dist/poptalk.min.js"
+  integrity="sha384-so1XZhQ2oUFVggJKW7w+RzKzvqZJwVjy0tcc56LZe7BpcPRKiVo6GdxbN8vtJSIy"
+  crossorigin="anonymous"
   data-api-url="https://your-backend.com"
   data-accent="#6C63FF"
   data-theme="dark"
@@ -65,11 +67,14 @@
 </script>
 ```
 
-> **Tip:** For production stability, use a tagged release URL instead of `@master`:
-> ```
-> https://cdn.jsdelivr.net/gh/pandaind/poptalk@v1.0.0/widget/dist/poptalk.min.js
-> ```
-> Tag a release with: `git tag v1.0.0 && git push --tags`
+> **Pinned and verified:** the snippet above uses the `v1.1.0` tag and a
+> [subresource integrity](https://developer.mozilla.org/docs/Web/Security/Subresource_Integrity)
+> hash, so the browser refuses the file if it ever differs from the release you reviewed. Avoid
+> `@master`: it changes under you. When you upgrade, take the new tag and hash from the release
+> notes (or compute it: `openssl dgst -sha384 -binary widget/dist/poptalk.min.js | openssl base64 -A`).
+>
+> Prefer not to depend on a CDN at all? [Meteorite](https://github.com/pandaind/meteorite)
+> sites copy the widget into their own output and load it from there with the same integrity check.
 
 ---
 
