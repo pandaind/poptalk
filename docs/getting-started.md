@@ -101,8 +101,8 @@ Add this snippet to your site's HTML before `</body>`:
 
 ```html
 <script
-  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@v1.2.0/widget/dist/poptalk.min.js"
-  integrity="sha384-fEWfaLJdMBYTw03xhQVUnNTu2L/1P8C5FYW8SMw0QO+YNgTiJZd0PiOy9t8SNdlP"
+  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@v1.3.0/widget/dist/poptalk.min.js"
+  integrity="sha384-ARdyvpNwfracSRNc4FAjVq0VDRrwzpcJzlzwc3/FwFirAs8i7mC6Rs3Y6sbHqS2E"
   crossorigin="anonymous"
   data-api-url="https://your-backend-domain.com"
   data-accent="#6C63FF"

@@ -62,8 +62,8 @@ Add this before `</body>` on any site — portfolio, business site, docs, produc
 
 ```html
 <script
-  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@v1.2.0/widget/dist/poptalk.min.js"
-  integrity="sha384-fEWfaLJdMBYTw03xhQVUnNTu2L/1P8C5FYW8SMw0QO+YNgTiJZd0PiOy9t8SNdlP"
+  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@v1.3.0/widget/dist/poptalk.min.js"
+  integrity="sha384-ARdyvpNwfracSRNc4FAjVq0VDRrwzpcJzlzwc3/FwFirAs8i7mC6Rs3Y6sbHqS2E"
   crossorigin="anonymous"
   data-api-url="https://your-backend-url.com"
   data-accent="#6C63FF"
@@ -85,6 +85,7 @@ A floating chat button appears in the bottom-right of your site. Done.
 | `data-accent` | `#6C63FF` | Primary accent color (any CSS color) |
 | `data-persona` | *(none)* | Which persona to chat with, for multi-persona backends. Omit to use the backend's default persona. |
 | `data-lang` | *(browser language)* | UI language: `en`, `es`, `fr`, `de`, `pt`, `hi`, `ja`, `zh`. Falls back to English for unsupported codes. |
+| `data-welcome` | persona's `welcomeMessage`, else a generic greeting | First line shown in the chat window. Overrides the persona's value. Plain text |
 | `data-collect` | `email` | Which contact the visitor is asked for before their first message: `email` or `phone`. Visitors must give a name and a valid contact to chat; there is no anonymous mode |
 
 The widget auto-fetches your name, title, and avatar initial from the backend — no hardcoding needed.
@@ -120,6 +121,7 @@ backend/data/personas/
 ```properties
 ownerName=Alice Smith
 chatTitle=Chat with Alice
+welcomeMessage=Ask me about Alice's projects
 avatarInitial=A
 websiteUrl=https://alice.example.com
 provider=anthropic

@@ -86,6 +86,26 @@ class PersonaServiceTest {
     }
 
     @Test
+    void aPersonaCanCarryItsOwnWelcomeMessage(@TempDir Path tempDir) throws IOException {
+        Path personas = tempDir.resolve("personas");
+        Files.createDirectories(personas.resolve("docs"));
+        Files.createDirectories(personas.resolve("plain"));
+        Files.writeString(personas.resolve("docs/context.txt"), "Docs.");
+        Files.writeString(personas.resolve("docs/persona.properties"),
+                "welcomeMessage=👋 Ask me about the docs, café included\n");
+        Files.writeString(personas.resolve("plain/context.txt"), "Plain.");
+
+        PersonaService service = newService();
+        service.setPersonasDir(personas.toString());
+        service.setDefaultPersona("plain");
+
+        service.init();
+
+        assertThat(service.getPersona("docs").welcomeMessage()).isEqualTo("👋 Ask me about the docs, café included");
+        assertThat(service.getPersona("plain").welcomeMessage()).isNull();
+    }
+
+    @Test
     void anInvalidTemperatureIsIgnoredRatherThanFailingPersonaLoad(@TempDir Path tempDir) throws IOException {
         Path personas = tempDir.resolve("personas");
         Files.createDirectories(personas.resolve("alice"));

@@ -24,6 +24,8 @@ import rawCSS from './styles.css?inline';
     // Visitors give a name and a contact before their first message. "email" (default) or
     // "phone" chooses which contact is asked for; the backend validates it.
     collect: script?.dataset.collect === 'phone' ? 'phone' : 'email',
+    // An explicit data-welcome wins over the persona's welcomeMessage, which wins over the default.
+    welcome: (script?.dataset.welcome || '').trim(),
   };
 
   const t = resolveTranslations(cfg.lang);
@@ -92,7 +94,7 @@ import rawCSS from './styles.css?inline';
       </div>
 
       <div id="pt-messages" role="log" aria-live="polite">
-        <p class="pt-welcome">${t.welcome}</p>
+        <p class="pt-welcome"></p>
       </div>
 
       <div id="pt-input-area">
@@ -120,6 +122,9 @@ import rawCSS from './styles.css?inline';
   const sendBtn   = shadow.getElementById('pt-send');
   const titleEl   = shadow.getElementById('pt-title');
   const avatarEl  = shadow.getElementById('pt-avatar');
+  const welcomeEl = shadow.querySelector('.pt-welcome');
+  // textContent, never innerHTML: the text comes from page markup or the backend.
+  if (welcomeEl) welcomeEl.textContent = cfg.welcome || t.welcome;
 
   // Set CSS custom property for accent
   host.style.setProperty('--pt-accent', cfg.accent);
@@ -134,6 +139,7 @@ import rawCSS from './styles.css?inline';
         if (data.chatTitle)     titleEl.textContent  = data.chatTitle;
         if (data.avatarInitial) avatarEl.textContent = data.avatarInitial.charAt(0).toUpperCase();
         if (data.chatMode)      chatMode = data.chatMode;
+        if (welcomeEl && !cfg.welcome && data.welcomeMessage) welcomeEl.textContent = data.welcomeMessage;
       }
     } catch (_) { /* use defaults */ }
   }
@@ -531,7 +537,7 @@ import rawCSS from './styles.css?inline';
   // Lets the host page follow its own light/dark toggle or accent without reloading the
   // widget (which would lose the open conversation).
   window.PopTalk = Object.freeze({
-    version: '1.2.0',
+    version: '1.3.0',
     setTheme(theme) {
       if (theme === 'dark' || theme === 'light' || theme === 'auto') applyTheme(theme);
     },

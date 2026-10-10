@@ -9,5 +9,7 @@ public record ConfigResponse(
         String chatTitle,
         String avatarInitial,
         /** "AI" or "MANUAL" — lets the widget pick the streaming vs. polling send path. */
-        String chatMode
+        String chatMode,
+        /** Optional custom greeting for the chat window; null lets the widget use its default. */
+        String welcomeMessage
 ) {}

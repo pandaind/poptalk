@@ -22,5 +22,15 @@ public record Persona(
          *  tenant's data to search from this key, so it must be unique per persona. Only
          *  meaningful when mcpEnabled is true. */
         String mcpApiKey,
-        String systemPrompt
-) {}
+        String systemPrompt,
+        /** Optional first line shown in the chat window; null means the widget's generic greeting. */
+        String welcomeMessage
+) {
+    /** A persona without a custom welcome message. */
+    public Persona(String id, String ownerName, String chatTitle, String avatarInitial, String websiteUrl,
+                   String provider, String model, Double temperature, boolean mcpEnabled,
+                   String mcpApiKey, String systemPrompt) {
+        this(id, ownerName, chatTitle, avatarInitial, websiteUrl, provider, model, temperature,
+                mcpEnabled, mcpApiKey, systemPrompt, null);
+    }
+}

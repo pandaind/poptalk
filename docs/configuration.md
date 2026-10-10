@@ -50,6 +50,7 @@
 | `data-accent` | `#6C63FF` | Primary accent color (hex, rgb, hsl — any CSS color) |
 | `data-persona` | *(none)* | Persona id to chat with, for multi-persona backends (see "Multiple Personas" in the README). Omit to use the backend's default persona. |
 | `data-lang` | *(browser language)* | UI language: `en`, `es`, `fr`, `de`, `pt`, `hi`, `ja`, `zh`. Unsupported codes fall back to English. |
+| `data-welcome` | persona's `welcomeMessage`, else a generic greeting | First line shown in the chat window. Overrides the persona's value. Plain text |
 | `data-collect` | `email` | Which contact the visitor is asked for before their first message: `email` or `phone`. Visitors must give a name and a valid contact to chat; there is no anonymous mode |
 
 ---
@@ -58,8 +59,8 @@
 
 ```html
 <script
-  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@v1.2.0/widget/dist/poptalk.min.js"
-  integrity="sha384-fEWfaLJdMBYTw03xhQVUnNTu2L/1P8C5FYW8SMw0QO+YNgTiJZd0PiOy9t8SNdlP"
+  src="https://cdn.jsdelivr.net/gh/pandaind/poptalk@v1.3.0/widget/dist/poptalk.min.js"
+  integrity="sha384-ARdyvpNwfracSRNc4FAjVq0VDRrwzpcJzlzwc3/FwFirAs8i7mC6Rs3Y6sbHqS2E"
   crossorigin="anonymous"
   data-api-url="https://your-backend.com"
   data-accent="#6C63FF"
@@ -68,7 +69,7 @@
 </script>
 ```
 
-> **Pinned and verified:** the snippet above uses the `v1.2.0` tag and a
+> **Pinned and verified:** the snippet above uses the `v1.3.0` tag and a
 > [subresource integrity](https://developer.mozilla.org/docs/Web/Security/Subresource_Integrity)
 > hash, so the browser refuses the file if it ever differs from the release you reviewed. Avoid
 > `@master`: it changes under you. When you upgrade, take the new tag and hash from the release

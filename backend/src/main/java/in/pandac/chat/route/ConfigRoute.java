@@ -38,7 +38,7 @@ public class ConfigRoute extends RouteBuilder {
                 Persona persona = personaService.getPersona(requestedPersona);
                 exchange.getMessage().setBody(
                     new ConfigResponse(persona.ownerName(), persona.chatTitle(), persona.avatarInitial(),
-                            chatModeService.getMode()));
+                            chatModeService.getMode(), persona.welcomeMessage()));
             });
     }
 }

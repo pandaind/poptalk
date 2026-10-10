@@ -8,6 +8,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.io.Reader;
 import java.io.InputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -173,9 +175,12 @@ public class PersonaService {
                         props.getProperty("mcp", Boolean.toString(defaultMcpEnabled)));
                 String mcpApiKey = blankToNull(props.getProperty("mcp-api-key", defaultMcpApiKey));
 
+                String welcomeMessage = blankToNull(props.getProperty("welcomeMessage"));
+
                 String context = loadContextFile(contextPath);
                 personas.put(id, new Persona(id, ownerName, chatTitle, avatarInitial, websiteUrl,
-                        provider, model, temperature, mcpEnabled, mcpApiKey, buildSystemPrompt(context)));
+                        provider, model, temperature, mcpEnabled, mcpApiKey, buildSystemPrompt(context),
+                        welcomeMessage));
             }
         } catch (IOException e) {
             log.error("Failed to scan personas directory '{}': {}", dir, e.getMessage());
@@ -201,7 +206,8 @@ public class PersonaService {
     private Properties loadPersonaProperties(Path path) {
         Properties props = new Properties();
         if (Files.exists(path)) {
-            try (InputStream in = Files.newInputStream(path)) {
+            // UTF-8, not Properties' ISO-8859-1 default, so names and greetings in any language work.
+            try (Reader in = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
                 props.load(in);
             } catch (IOException e) {
                 log.warn("Failed to read persona.properties at '{}': {}", path, e.getMessage());
