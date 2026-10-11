@@ -61,7 +61,7 @@ services:
       OWNER_WEBSITE_URL: ${OWNER_WEBSITE_URL:-}
       CHAT_TITLE: ${CHAT_TITLE:-Chat with Me}
       CHAT_AVATAR_INITIAL: ${CHAT_AVATAR_INITIAL:-P}
-      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:?set CORS_ALLOWED_ORIGIN in .env (your site, e.g. https://pandac.in)}
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:?set CORS_ALLOWED_ORIGIN in .env (your site, e.g. https://example.com)}
     volumes:
       # The H2 database and the persona folders (data/personas/<id>/) live here.
       - ./data:/app/data

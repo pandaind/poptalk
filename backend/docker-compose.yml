@@ -47,7 +47,7 @@ services:
       OWNER_WEBSITE_URL: ${OWNER_WEBSITE_URL:-}
       CHAT_TITLE: ${CHAT_TITLE:-Chat with Me}
       CHAT_AVATAR_INITIAL: ${CHAT_AVATAR_INITIAL:-P}
-      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-https://pandac.in}
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-http://localhost:1313}
     extra_hosts:
       # Lets the container reach an Ollama running on the host (the default OLLAMA_BASE_URL).
       # Docker Desktop provides this name; Docker Engine on Linux needs the mapping.

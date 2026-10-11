@@ -103,7 +103,7 @@ app:
     secret: ${JWT_SECRET}
     expiry-hours: 1
   cors:
-    allowed-origin: ${CORS_ALLOWED_ORIGIN:https://pandac.in}
+    allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:1313}
   rate-limit:
     requests-per-minute: 5
     messages-per-session-per-hour: 20
