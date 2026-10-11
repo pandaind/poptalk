@@ -91,7 +91,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
       EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-ollama}
       EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-768}
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      # Embeddings and reranking can use a different Ollama than chat (for example chat on
+      # Ollama Cloud, embeddings on the local container).
+      OLLAMA_BASE_URL: ${EMBEDDING_OLLAMA_BASE_URL:-${OLLAMA_BASE_URL:-http://ollama:11434}}
       OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
