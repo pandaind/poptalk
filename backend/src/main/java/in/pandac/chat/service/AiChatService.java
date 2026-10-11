@@ -47,6 +47,17 @@ public class AiChatService {
     private final Map<String, ChatClient> chatClientsByProvider = new LinkedHashMap<>();
     private final ChatMemory chatMemory;
     private final PersonaService personaService;
+    /**
+     * Appended to the system prompt when the persona can search a knowledge base. Without it the
+     * shared rules ("only talk about what's in your context", "if you don't know, say so") make
+     * models answer "I don't have that" instead of searching: in testing, 3 of 4 detail questions
+     * skipped the tool until this was said explicitly.
+     */
+    static final String KNOWLEDGE_TOOL_RULE = "\n\nYou can search a knowledge base with the "
+            + "search_knowledge_base tool. It holds the detailed pages behind your context. For any "
+            + "question about specifics (a post, a project, commands, versions, numbers, dates), call it "
+            + "first and answer from what it returns. Only say you don't know if it returns nothing relevant.";
+
     private final PersonaMcpToolProviders mcpToolProviders;
 
     @Value("${app.ai.max-history-turns:8}")
@@ -137,8 +148,14 @@ public class AiChatService {
                                                             String sessionId, String userName, String userMessage) {
         String promptText = String.format("[Visitor: %s] %s", userName, userMessage);
 
+        boolean hasKnowledgeTool = persona.mcpEnabled() && mcpToolProviders != null
+                && mcpToolProviders.hasTools(persona.id());
+        String systemPrompt = hasKnowledgeTool
+                ? persona.systemPrompt() + KNOWLEDGE_TOOL_RULE
+                : persona.systemPrompt();
+
         ChatClient.ChatClientRequestSpec request = chatClient.prompt()
-                .system(persona.systemPrompt())
+                .system(systemPrompt)
                 .user(promptText)
                 .advisors(advisor -> advisor
                         .param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId)

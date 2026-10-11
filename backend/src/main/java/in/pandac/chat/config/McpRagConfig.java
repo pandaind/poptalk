@@ -92,6 +92,15 @@ public class McpRagConfig {
         public ToolCallbackProvider get(String personaId) {
             return byPersona.get(personaId);
         }
+
+        /**
+         * True when the persona has a live connection to the knowledge server right now. Cheap
+         * (no network call), so a request can tell the model about its tools only when it has them.
+         */
+        public boolean hasTools(String personaId) {
+            return byPersona.get(personaId) instanceof ReconnectingToolProvider provider
+                    && provider.isConnected();
+        }
     }
 
     /** A live MCP connection: its tools, and how to close it. */

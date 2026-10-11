@@ -96,6 +96,31 @@ class AiChatServiceTest {
         assertThatCode(() -> service.chat("session-1", "default", "Visitor", "Hi!")).doesNotThrowAnyException();
     }
 
+    private String systemPromptSentFor(boolean toolsAvailable) {
+        OllamaChatModel ollama = ollamaReturning("ok");
+        PersonaService personaService = personaServiceFor(persona("default", "ollama", null, null, true));
+        ToolCallbackProvider toolProvider = mock(ToolCallbackProvider.class);
+        when(toolProvider.getToolCallbacks()).thenReturn(new org.springframework.ai.tool.ToolCallback[0]);
+        PersonaMcpToolProviders mcpToolProviders = mock(PersonaMcpToolProviders.class);
+        when(mcpToolProviders.get("default")).thenReturn(toolProvider);
+        when(mcpToolProviders.hasTools("default")).thenReturn(toolsAvailable);
+        AiChatService service = new AiChatService(personaService,
+                providerOf(ollama), providerOf(null), providerOf(null), providerOf(null), providerOf(null),
+                providerOf(mcpToolProviders));
+
+        service.chat("session-1", "default", "Visitor", "Hi!");
+
+        org.mockito.ArgumentCaptor<Prompt> prompt = org.mockito.ArgumentCaptor.forClass(Prompt.class);
+        org.mockito.Mockito.verify(ollama).call(prompt.capture());
+        return prompt.getValue().getSystemMessage().getText();
+    }
+
+    @Test
+    void theModelIsToldAboutTheKnowledgeToolOnlyWhenItHasOne() {
+        assertThat(systemPromptSentFor(true)).contains("search_knowledge_base");
+        assertThat(systemPromptSentFor(false)).doesNotContain("search_knowledge_base");
+    }
+
     @Test
     void chatStreamEmitsEachChunkFromTheProvider() {
         OllamaChatModel ollama = ollamaStreaming("Hel", "lo", " there!");
