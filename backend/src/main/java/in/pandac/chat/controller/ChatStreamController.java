@@ -144,10 +144,20 @@ public class ChatStreamController {
         return emitter;
     }
 
+    /**
+     * Text for an SSE {@code data:} field that a spec-compliant client reads back unchanged.
+     * A client removes one leading space from every data line, so a chunk that itself starts
+     * with a space (nearly every token after the first: " world") would lose it and the words
+     * would run together. Adding one space to each line makes that removal exact.
+     */
+    static String sseData(String chunk) {
+        return " " + chunk.replace("\n", "\n ");
+    }
+
     private void sendChunk(SseEmitter emitter, StringBuilder fullResponse, String chunk) {
         fullResponse.append(chunk);
         try {
-            emitter.send(SseEmitter.event().data(chunk));
+            emitter.send(SseEmitter.event().data(sseData(chunk)));
         } catch (IOException e) {
             // The visitor navigated away or the connection dropped — nothing
             // more to send; the subscription will be cancelled on its own.
