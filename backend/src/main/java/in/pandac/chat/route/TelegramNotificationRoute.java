@@ -1,6 +1,10 @@
 package in.pandac.chat.route;
 
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -26,12 +30,29 @@ import org.springframework.stereotype.Component;
 @Component
 public class TelegramNotificationRoute extends RouteBuilder {
 
+    private static final Logger log = LoggerFactory.getLogger(TelegramNotificationRoute.class);
+
     public static final String ENDPOINT = "seda:telegramNotify?waitForTaskToComplete=Never";
+
+    private final boolean telegramConfigured;
+
+    public TelegramNotificationRoute(@Value("${TELEGRAM_BOT_TOKEN:}") String botToken) {
+        this.telegramConfigured = botToken != null && !botToken.isBlank();
+    }
 
     @Override
     public void configure() {
+        if (telegramConfigured) {
+            from(ENDPOINT)
+                    .routeId("telegram-notify-async")
+                    .to("telegram:bots");
+            return;
+        }
+        // Telegram is optional. Keep the queue drained (callers still enqueue) but send nothing.
+        log.warn("TELEGRAM_BOT_TOKEN is not set: visitor notifications and manual replies are off. "
+                + "AI answers are unaffected.");
         from(ENDPOINT)
                 .routeId("telegram-notify-async")
-                .to("telegram:bots");
+                .log(LoggingLevel.DEBUG, "Telegram is not configured; dropping an admin notification");
     }
 }

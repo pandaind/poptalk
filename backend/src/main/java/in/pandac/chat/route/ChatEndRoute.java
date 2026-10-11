@@ -72,7 +72,9 @@ public class ChatEndRoute extends RouteBuilder {
             })
             
             // 3. Send notification to Telegram
-            .to("telegram:bots")
+            // Via the notification route, like every other Telegram send, so a deployment without
+            // a bot token simply drops it.
+            .to(TelegramNotificationRoute.ENDPOINT)
             
             // 4. Return success
             .process(exchange -> {

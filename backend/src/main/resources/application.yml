@@ -81,7 +81,8 @@ spring:
 camel:
   component:
     telegram:
-      authorization-token: ${TELEGRAM_BOT_TOKEN}
+      # Optional: with no token, Telegram notifications and manual replies are switched off.
+      authorization-token: ${TELEGRAM_BOT_TOKEN:}
 
 app:
   mcp:
@@ -97,7 +98,7 @@ app:
     # Optional — shown in the AI's fallback reply when it can't respond (e.g. "check example.com").
     website-url: ${OWNER_WEBSITE_URL:}
   telegram:
-    admin-chat-id: ${TELEGRAM_ADMIN_CHAT_ID}
+    admin-chat-id: ${TELEGRAM_ADMIN_CHAT_ID:}
   jwt:
     secret: ${JWT_SECRET}
     expiry-hours: 1

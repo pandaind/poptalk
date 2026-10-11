@@ -6,10 +6,14 @@ import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.telegram.model.IncomingMessage;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
+// Polling Telegram only makes sense with a bot token; without one the route is not created, so
+// the log is not filled with a failed poll every few seconds.
+@ConditionalOnExpression("!'${TELEGRAM_BOT_TOKEN:}'.trim().isEmpty()")
 @Component
 public class TelegramConsumerRoute extends RouteBuilder {
 
