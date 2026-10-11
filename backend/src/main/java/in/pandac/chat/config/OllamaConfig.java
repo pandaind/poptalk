@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 public class OllamaConfig {
@@ -27,13 +28,20 @@ public class OllamaConfig {
     @Bean
     public OllamaApi ollamaApi() {
         var restClientBuilder = RestClient.builder();
+        // Streamed replies go through a reactive WebClient, a separate HTTP client from the
+        // RestClient used for blocking calls: the key has to be set on both or streaming
+        // requests to Ollama Cloud come back 401.
+        var webClientBuilder = WebClient.builder();
         if (apiKey != null && !apiKey.trim().isEmpty()) {
-            restClientBuilder.defaultHeader("Authorization", "Bearer " + apiKey.trim());
+            String bearer = "Bearer " + apiKey.trim();
+            restClientBuilder.defaultHeader("Authorization", bearer);
+            webClientBuilder.defaultHeader("Authorization", bearer);
         }
-        
+
         return OllamaApi.builder()
             .baseUrl(baseUrl)
             .restClientBuilder(restClientBuilder)
+            .webClientBuilder(webClientBuilder)
             .build();
     }
 
