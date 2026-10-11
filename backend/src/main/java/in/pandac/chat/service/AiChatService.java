@@ -51,12 +51,14 @@ public class AiChatService {
      * Appended to the system prompt when the persona can search a knowledge base. Without it the
      * shared rules ("only talk about what's in your context", "if you don't know, say so") make
      * models answer "I don't have that" instead of searching: in testing, 3 of 4 detail questions
-     * skipped the tool until this was said explicitly.
+     * skipped the tool until this was said explicitly, and a personal question the site does answer
+     * was refused as "off topic" until the rule said to search whatever the topic.
      */
     static final String KNOWLEDGE_TOOL_RULE = "\n\nYou can search a knowledge base with the "
-            + "search_knowledge_base tool. It holds the detailed pages behind your context. For any "
-            + "question about specifics (a post, a project, commands, versions, numbers, dates), call it "
-            + "first and answer from what it returns. Only say you don't know if it returns nothing relevant.";
+            + "search_knowledge_base tool. It holds the detailed pages behind your context, and anything "
+            + "it returns counts as part of your context. Whenever a question is not fully answered by "
+            + "your context, call it first, whatever the topic, and answer from what it returns. Only say "
+            + "you don't know, or that a topic is outside what you cover, if it returns nothing relevant.";
 
     private final PersonaMcpToolProviders mcpToolProviders;
 
