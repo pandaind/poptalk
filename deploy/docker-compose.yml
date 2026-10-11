@@ -1,0 +1,146 @@
+# PopTalk with its knowledge base (poptalk-rag), as one stack.
+#
+#   cp .env.example .env     # fill in the secrets
+#   docker compose up -d --build
+#
+# Services
+#   backend   the chat API (this repo's backend/), published on 127.0.0.1 only
+#   rag       the MCP knowledge service (pandaind/poptalk-rag), internal only
+#   db        Postgres with pgvector for the knowledge base, internal only
+#   ollama    optional local models: `docker compose --profile ollama up -d`
+#
+# Nothing here is exposed to the internet by itself. Put a TLS reverse proxy (Caddy, Nginx,
+# Traefik) in front of 127.0.0.1:${BACKEND_PORT} and use that HTTPS URL as the widget's api url.
+
+name: poptalk
+
+services:
+  backend:
+    build:
+      context: ${POPTALK_BACKEND_SRC:-https://github.com/pandaind/poptalk.git#master:backend}
+    image: poptalk-backend:local
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-9097}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?set TELEGRAM_BOT_TOKEN in .env}
+      TELEGRAM_ADMIN_CHAT_ID: ${TELEGRAM_ADMIN_CHAT_ID:?set TELEGRAM_ADMIN_CHAT_ID in .env}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      H2_PASSWORD: ${H2_PASSWORD:?set H2_PASSWORD in .env}
+      AI_PROVIDER: ${AI_PROVIDER:-ollama}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+      OLLAMA_TEMPERATURE: ${OLLAMA_TEMPERATURE:-0.3}
+      OLLAMA_MAX_TOKENS: ${OLLAMA_MAX_TOKENS:-150}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      OPENAI_TEMPERATURE: ${OPENAI_TEMPERATURE:-0.3}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-5}
+      ANTHROPIC_TEMPERATURE: ${ANTHROPIC_TEMPERATURE:-0.3}
+      ANTHROPIC_MAX_TOKENS: ${ANTHROPIC_MAX_TOKENS:-1024}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+      MISTRAL_MODEL: ${MISTRAL_MODEL:-mistral-small-latest}
+      MISTRAL_TEMPERATURE: ${MISTRAL_TEMPERATURE:-0.3}
+      MISTRAL_BASE_URL: ${MISTRAL_BASE_URL:-https://api.mistral.ai}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
+      DEEPSEEK_TEMPERATURE: ${DEEPSEEK_TEMPERATURE:-0.3}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      # The knowledge base. In multi-persona mode set mcp-api-key= per persona instead.
+      MCP_RAG_URL: http://rag:8090
+      MCP_RAG_ENDPOINT: /mcp
+      MCP_ENABLED: ${MCP_ENABLED:-true}
+      MCP_API_KEY: ${MCP_API_KEY:-}
+      CHAT_MODE: ${CHAT_MODE:-AI}
+      OWNER_NAME: ${OWNER_NAME:-PandaC}
+      OWNER_WEBSITE_URL: ${OWNER_WEBSITE_URL:-}
+      CHAT_TITLE: ${CHAT_TITLE:-Chat with Me}
+      CHAT_AVATAR_INITIAL: ${CHAT_AVATAR_INITIAL:-P}
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:?set CORS_ALLOWED_ORIGIN in .env (your site, e.g. https://pandac.in)}
+    volumes:
+      # The H2 database and the persona folders (data/personas/<id>/) live here.
+      - ./data:/app/data
+    depends_on:
+      rag:
+        # The backend connects to the knowledge service once, at startup, so wait until it is
+        # accepting connections. `restart: true` restarts the backend whenever rag is restarted.
+        condition: service_healthy
+        restart: true
+    healthcheck:
+      # /api/config is public and answers once the app is up (the app has no actuator endpoints).
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/config >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  rag:
+    build:
+      context: ${POPTALK_RAG_SRC:-https://github.com/pandaind/poptalk-rag.git#master}
+    image: poptalk-rag:local
+    restart: unless-stopped
+    # No published port: only the backend, on this stack's network, talks to it.
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${DB_NAME:-poptalk_rag}
+      DB_USERNAME: ${DB_USERNAME:-poptalk_rag}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-ollama}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-768}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      RERANK_ENABLED: ${RERANK_ENABLED:-true}
+      RERANK_PROVIDER: ${RERANK_PROVIDER:-ollama}
+      RERANK_MODEL: ${RERANK_MODEL:-llama3.2}
+      PERSONA_API_KEYS: ${PERSONA_API_KEYS:?set PERSONA_API_KEYS in .env}
+      KNOWLEDGE_DIR: /app/knowledge
+      KNOWLEDGE_POLL_INTERVAL_MS: ${KNOWLEDGE_POLL_INTERVAL_MS:-60000}
+      KNOWLEDGE_SITE_SOURCES: ${KNOWLEDGE_SITE_SOURCES:-}
+      KNOWLEDGE_SITE_POLL_MS: ${KNOWLEDGE_SITE_POLL_MS:-600000}
+    volumes:
+      - ./knowledge:/app/knowledge
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      # The app has no health endpoint; an open port means the MCP server is up.
+      test: ["CMD-SHELL", "nc -z localhost 8090 || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
+
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-poptalk_rag}
+      POSTGRES_USER: ${DB_USERNAME:-poptalk_rag}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-poptalk_rag} -d ${DB_NAME:-poptalk_rag}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional local models (CPU unless you add GPU settings). After the first start, pull the
+  # models you use:  docker compose exec ollama ollama pull nomic-embed-text
+  #                  docker compose exec ollama ollama pull llama3.2
+  ollama:
+    profiles: ["ollama"]
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama:/root/.ollama
+
+volumes:
+  pgdata:
+  ollama:

@@ -48,13 +48,18 @@ services:
       CHAT_TITLE: ${CHAT_TITLE:-Chat with Me}
       CHAT_AVATAR_INITIAL: ${CHAT_AVATAR_INITIAL:-P}
       CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-https://pandac.in}
+    extra_hosts:
+      # Lets the container reach an Ollama running on the host (the default OLLAMA_BASE_URL).
+      # Docker Desktop provides this name; Docker Engine on Linux needs the mapping.
+      - "host.docker.internal:host-gateway"
     volumes:
       # Persist H2 database on host (survives container rebuilds)
       - ./data:/app/data
       # Optional: override the context file without rebuilding the image
       # - ./data/context.txt:/app/data/context.txt
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health 2>/dev/null | grep -q '\"status\":\"UP\"' || exit 1"]
+      # The app has no actuator endpoints; /api/config is public and answers once it is up.
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/config >/dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
