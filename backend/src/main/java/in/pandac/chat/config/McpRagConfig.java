@@ -10,6 +10,7 @@ import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -18,6 +19,10 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Optional plug-in point for an external RAG (or any other tool-providing)
@@ -41,12 +46,19 @@ import java.util.Map;
  * MCP auto-configuration is disabled via {@code spring.ai.mcp.client.enabled:
  * false} in application.yml so it doesn't register extra, empty
  * {@link ToolCallbackProvider} beans alongside these.
+ *
+ * <p>The connection is allowed to come up late and to drop: if the RAG server is not reachable
+ * at startup, or restarts later, the persona simply has no tools until a background task
+ * reconnects (every {@value #RETRY_SECONDS}s). Chat keeps working without tools in the meantime.
  */
 @Configuration
 @ConditionalOnExpression("'${app.mcp.rag-url:}'.length() > 0")
 public class McpRagConfig {
 
     private static final Logger log = LoggerFactory.getLogger(McpRagConfig.class);
+
+    /** How often a persona whose RAG connection is down tries to connect again. */
+    static final int RETRY_SECONDS = 15;
 
     @Value("${app.mcp.rag-url}")
     private String ragUrl;
@@ -55,7 +67,8 @@ public class McpRagConfig {
     private String ragEndpoint;
 
     private final PersonaService personaService;
-    private final Map<String, McpSyncClient> clientsByPersona = new LinkedHashMap<>();
+    private final Map<String, ReconnectingToolProvider> providersByPersona = new LinkedHashMap<>();
+    private ScheduledExecutorService retryScheduler;
 
     public McpRagConfig(PersonaService personaService) {
         this.personaService = personaService;
@@ -81,6 +94,84 @@ public class McpRagConfig {
         }
     }
 
+    /** A live MCP connection: its tools, and how to close it. */
+    record Connection(ToolCallbackProvider tools, AutoCloseable closer) {}
+
+    /**
+     * Tool provider for one persona that connects lazily and heals itself. While there is no
+     * connection it offers no tools (so chat still works); a background task calls
+     * {@link #tryConnect()} until it succeeds, and a failure while listing tools drops the
+     * connection so the same task replaces it.
+     */
+    static final class ReconnectingToolProvider implements ToolCallbackProvider {
+        private final String personaId;
+        private final Callable<Connection> connector;
+        private volatile Connection connection;
+
+        ReconnectingToolProvider(String personaId, Callable<Connection> connector) {
+            this.personaId = personaId;
+            this.connector = connector;
+        }
+
+        boolean isConnected() {
+            return connection != null;
+        }
+
+        /** Returns true when connected (already, or just now). */
+        synchronized boolean tryConnect() {
+            if (connection != null) {
+                return true;
+            }
+            try {
+                connection = connector.call();
+                log.info("Connected to the RAG MCP server for persona '{}'", personaId);
+                return true;
+            } catch (Exception e) {
+                log.debug("RAG MCP server not available for persona '{}': {}", personaId, e.getMessage());
+                return false;
+            }
+        }
+
+        @Override
+        public ToolCallback[] getToolCallbacks() {
+            Connection current = connection;
+            if (current == null) {
+                return new ToolCallback[0];
+            }
+            try {
+                return current.tools().getToolCallbacks();
+            } catch (Exception e) {
+                log.warn("Lost the RAG MCP connection for persona '{}': {} — reconnecting in the background",
+                        personaId, e.getMessage());
+                drop(current);
+                return new ToolCallback[0];
+            }
+        }
+
+        private synchronized void drop(Connection lost) {
+            if (connection == lost) {
+                connection = null;
+                closeQuietly(lost);
+            }
+        }
+
+        void close() {
+            Connection current = connection;
+            connection = null;
+            if (current != null) {
+                closeQuietly(current);
+            }
+        }
+
+        private static void closeQuietly(Connection c) {
+            try {
+                c.closer().close();
+            } catch (Exception ignored) {
+                // closing a connection that is already broken
+            }
+        }
+    }
+
     @Bean
     public PersonaMcpToolProviders mcpToolCallbackProvidersByPersona() {
         Map<String, ToolCallbackProvider> providers = new LinkedHashMap<>();
@@ -94,16 +185,43 @@ public class McpRagConfig {
                 continue;
             }
 
-            McpSyncClient client = buildClient(persona);
-            clientsByPersona.put(persona.id(), client);
-            providers.put(persona.id(), new SyncMcpToolCallbackProvider(client));
+            ReconnectingToolProvider provider =
+                    new ReconnectingToolProvider(persona.id(), () -> connect(persona));
+            if (!provider.tryConnect()) {
+                log.warn("Could not connect to the RAG MCP server at {}{} for persona '{}' — it will have no "
+                        + "knowledge-base tools until it is reachable; retrying every {}s.",
+                        ragUrl, ragEndpoint, persona.id(), RETRY_SECONDS);
+            }
+            providersByPersona.put(persona.id(), provider);
+            providers.put(persona.id(), provider);
         }
 
-        log.info("RAG MCP clients configured for persona(s): {}", clientsByPersona.keySet());
+        log.info("RAG MCP configured for persona(s): {}", providersByPersona.keySet());
+        if (!providersByPersona.isEmpty()) {
+            startRetryTask();
+        }
         return new PersonaMcpToolProviders(providers);
     }
 
-    private McpSyncClient buildClient(Persona persona) {
+    private void startRetryTask() {
+        retryScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "rag-mcp-reconnect");
+            t.setDaemon(true);
+            return t;
+        });
+        retryScheduler.scheduleWithFixedDelay(() -> {
+            try {
+                providersByPersona.values().stream()
+                        .filter(p -> !p.isConnected())
+                        .forEach(ReconnectingToolProvider::tryConnect);
+            } catch (RuntimeException e) {
+                log.warn("RAG MCP reconnect pass failed: {}", e.getMessage());
+            }
+        }, RETRY_SECONDS, RETRY_SECONDS, TimeUnit.SECONDS);
+    }
+
+    /** Builds and initializes a client for the persona; throws if the server is not reachable. */
+    private Connection connect(Persona persona) {
         // .customizeRequest(Consumer<HttpRequest.Builder>) was renamed/reshaped to
         // .httpRequestCustomizer(...) in MCP SDK 2.0.0 (bumped alongside Spring AI
         // 2.0's own major version) — the customizer callback now also receives the
@@ -118,24 +236,20 @@ public class McpRagConfig {
         McpSyncClient client = McpClient.sync(transport)
                 .clientInfo(new McpSchema.Implementation("poptalk-" + persona.id(), "1.0.0"))
                 .build();
-
-        // Connect at startup so failures show up in the logs immediately, but
-        // never block boot on it — an unreachable RAG server just means this
-        // persona's tools are unavailable until the next restart, same as any
-        // other provider misconfiguration in this app.
         try {
             client.initialize();
-            log.info("Connected to RAG MCP server at {}{} for persona '{}'", ragUrl, ragEndpoint, persona.id());
-        } catch (Exception e) {
-            log.warn("Could not connect to RAG MCP server at {}{} for persona '{}': {} — its tools will be "
-                    + "unavailable until this is fixed and the backend is restarted.",
-                    ragUrl, ragEndpoint, persona.id(), e.getMessage());
+        } catch (RuntimeException e) {
+            client.close();
+            throw e;
         }
-        return client;
+        return new Connection(new SyncMcpToolCallbackProvider(client), client::close);
     }
 
     @PreDestroy
     public void closeClients() {
-        clientsByPersona.values().forEach(McpSyncClient::close);
+        if (retryScheduler != null) {
+            retryScheduler.shutdownNow();
+        }
+        providersByPersona.values().forEach(ReconnectingToolProvider::close);
     }
 }

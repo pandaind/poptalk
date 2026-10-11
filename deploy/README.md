@@ -63,8 +63,9 @@ Changing the embedding model changes the vector size. Start with an empty databa
 
 - `./data` is mounted over the backend's `/app/data`, so the context file the image ships with is
   hidden. Put your own at `data/personas/<id>/context.txt` (or `data/context.txt`).
-- The backend connects to the knowledge service once, at startup. The compose file starts it
-  after the knowledge service is healthy and restarts it whenever that service is restarted
-  through compose. If you restart the knowledge service by other means, restart the backend too.
+- The backend keeps trying to reach the knowledge service: if it is down at startup, or restarts
+  later, chat keeps working without knowledge-base tools and they come back within about 15
+  seconds of the service being reachable. The compose file also starts the backend after the
+  knowledge service is healthy.
 - Back up `./data` (sessions database, personas) and the `pgdata` volume.
 - Update with `git pull && docker compose up -d --build`.
